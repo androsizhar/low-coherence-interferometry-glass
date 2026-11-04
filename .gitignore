@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+salidas/
+.ruff_cache/
+ejemplo_sintetico/
+exportacion/
+resultados/

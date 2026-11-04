@@ -1,0 +1,907 @@
+{
+  "estado_validacion": {
+    "origen_datos": "simulado",
+    "origen_es_declaracion_del_usuario": true,
+    "segunda_muestra": "compatible",
+    "independencia_documentada": true,
+    "validacion_experimental_completa": false,
+    "decision_de_liberacion": "no_emitida",
+    "motivo": "resultados de investigacion; requiere protocolo experimental, trazabilidad y validacion de cobertura"
+  },
+  "unidades": {
+    "longitudes": "um",
+    "STL": "um (STL no almacena unidades)",
+    "cuna": "mrad",
+    "incertidumbre": "estandar 1 sigma"
+  },
+  "soporte": {
+    "nodos_evaluados": 841,
+    "nodos_fuera_del_soporte": 120,
+    "mascara_explicita": false,
+    "limite": "envolvente convexa intersectada con máscara de adquisición; soporte de nodos a resolución de rejilla"
+  },
+  "regla_calidad": {
+    "umbral_P_fuera": 0.05,
+    "interpretacion": "riesgo puntual bajo modelo normal; no probabilidad global de rechazo ni pieza liberada",
+    "fracciones": "proporcion de nodos soportados, no area superficial exacta"
+  },
+  "incertidumbre_superficies": {
+    "aleatoria": "cota conservadora std_frente + suma std_espesor; correlacion de campos GP no estimada",
+    "comun": "covarianza indices y marco rigido propagada despues del ajuste; sin reduccion por numero de puntos",
+    "limites": "presupuesto parcial conocido; dirección de sonda propagada solo si se aporta cov_normal; sin discrepancia física medida",
+    "total_experimental_disponible": false,
+    "sigma_total_experimental_um": null
+  },
+  "incidencia": {
+    "correccion_aplicada": false,
+    "modelo": "estimación geométrica de recorrido d·(sec(asin(sin(θ_aire)/n_fase))−1); no respuesta espectral del equipo",
+    "angulo_max_deg": 1.7075472925031877e-06,
+    "angulo_medio_deg": 3.484335814644983e-07,
+    "angulo_por_punto_deg": [
+      1.7075472925031877e-06,
+      1.2074182697257333e-06,
+      1.2074182697257333e-06,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      1.2074182697257333e-06,
+      1.2074182697257333e-06,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      1.2074182697257333e-06,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.2074182697257333e-06,
+      1.2074182697257333e-06,
+      8.537736462515939e-07,
+      1.2074182697257333e-06,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      1.2074182697257333e-06,
+      1.4787793334710982e-06,
+      1.2074182697257333e-06,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      1.2074182697257333e-06,
+      1.7075472925031877e-06,
+      1.4787793334710982e-06,
+      1.2074182697257333e-06,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      1.2074182697257333e-06,
+      1.2074182697257333e-06,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      1.2074182697257333e-06,
+      8.537736462515939e-07,
+      1.2074182697257333e-06,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      1.2074182697257333e-06,
+      1.2074182697257333e-06,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      1.4787793334710982e-06,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.2074182697257333e-06,
+      1.2074182697257333e-06,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.4787793334710982e-06,
+      1.4787793334710982e-06,
+      1.2074182697257333e-06,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      0.0,
+      8.537736462515939e-07,
+      1.4787793334710982e-06,
+      1.2074182697257333e-06,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      1.2074182697257333e-06,
+      1.4787793334710982e-06,
+      1.2074182697257333e-06,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      1.4787793334710982e-06,
+      0.0,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      8.537736462515939e-07,
+      1.4787793334710982e-06,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      8.537736462515939e-07,
+      0.0,
+      0.0,
+      1.2074182697257333e-06,
+      1.7075472925031877e-06
+    ],
+    "sigma_angulo_sonda_deg": null,
+    "normal_CAD_considerada_exacta_en_diagnostico": true,
+    "exceso_camino_geometrico_max_um_por_capa": [
+      4.669127932326651e-13,
+      1.7211587643431926e-13,
+      3.5577267137835396e-13
+    ],
+    "indices_fase_usados": [
+      1.5006520430195947,
+      1.4724227887617065,
+      1.5006520430195947
+    ],
+    "advertencia": "Incidencia casi normal; modelo oblicuo del equipo no validado",
+    "incertidumbre_correccion_oblicua_um": null,
+    "incertidumbre_espesor_por_incidencia_um": null,
+    "limite_cov_normal": "cov_normal propagada a posición/desviación CAD de primer orden; no al sesgo de espesor oblicuo no calibrado"
+  },
+  "presupuesto_incertidumbre": [
+    {
+      "componente": "referencia",
+      "sigma": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "covarianza": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "unidad": "µm",
+      "estado": "incluida en cov_ng; no sumar de nuevo",
+      "propagada": true,
+      "detalle": "covarianza del espesor certificado aportado a calibrar; consultar archivo de referencia"
+    },
+    {
+      "componente": "grupo_optico",
+      "sigma": [
+        0.0005781774640899402,
+        0.0019470286650230513,
+        0.0005781774640899402
+      ],
+      "unidad": "1",
+      "estado": "parcial conocida",
+      "propagada": true,
+      "detalle": "índice común, incluye referencia y media de repeticiones; covarianza entre capas conservada"
+    },
+    {
+      "componente": "eje_espectral",
+      "sigma": null,
+      "unidad": "µm",
+      "estado": "no disponible",
+      "propagada": false
+    },
+    {
+      "componente": "offset",
+      "sigma": null,
+      "unidad": "µm",
+      "estado": "no disponible",
+      "propagada": false
+    },
+    {
+      "componente": "deriva",
+      "sigma": null,
+      "unidad": "µm",
+      "estado": "no disponible",
+      "propagada": false
+    },
+    {
+      "componente": "montaje",
+      "sigma": null,
+      "unidad": "rad y µm",
+      "estado": "covarianza declarada",
+      "propagada": true,
+      "covarianza": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "sigma_pos_punto_um": 3.0
+    },
+    {
+      "componente": "normal_sonda",
+      "sigma": null,
+      "unidad": "°; máximo de ángulo de sonda",
+      "estado": "no disponible",
+      "propagada": false
+    },
+    {
+      "componente": "repetibilidad",
+      "sigma": [
+        0.1883538916747036,
+        0.2580326158898141,
+        0.19540944796687745
+      ],
+      "unidad": "µm de camino óptico",
+      "estado": "estimada de repeticiones; piso de ruido",
+      "propagada": true
+    },
+    {
+      "componente": "interpolacion",
+      "sigma": null,
+      "unidad": "µm",
+      "estado": "GP condicionado; hiperparámetros sin incertidumbre",
+      "propagada": true
+    },
+    {
+      "componente": "modelo",
+      "sigma": null,
+      "unidad": "µm",
+      "estado": "no disponible; incluye respuesta oblicua y discrepancia física",
+      "propagada": false
+    }
+  ],
+  "consistencia_superficies": {
+    "espesor_STL": "norma(S_j-S_j-1) = d_media_j en cada vertice",
+    "diferencia_rms_vs_GP_delta_um": [
+      4.2393591567014735e-07,
+      0.670782812680355,
+      0.6955334366341205,
+      0.879992439894505
+    ]
+  },
+  "puntos_validos": 289,
+  "puntos_validos_espectrales": 289,
+  "puntos_con_defecto": {},
+  "banderas": [
+    "incertidumbre_normal_sonda_no_declarada_o_incompleta",
+    "predicciones_fuera_soporte_excluidas_de_calidad_y_stl"
+  ],
+  "calibracion": {
+    "ng": [
+      1.5260719825706786,
+      1.4789916803288186,
+      1.5260719825706786
+    ],
+    "u_rel_sistematica": [
+      0.0003788664431909669,
+      0.001316456806971474,
+      0.0003788664431909669
+    ],
+    "sigma_a_um": [
+      0.1883538916747036,
+      0.2580326158898141,
+      0.19540944796687745
+    ],
+    "repeticiones": 30,
+    "ok": true,
+    "banderas": [],
+    "cov_a_um2": [
+      [
+        0.035477188509005976,
+        -0.03150007032856969,
+        -0.003604303234193162
+      ],
+      [
+        -0.03150007032856969,
+        0.06658083086294032,
+        -0.03490699636302971
+      ],
+      [
+        -0.003604303234193162,
+        -0.03490699636302971,
+        0.03818485235471979
+      ]
+    ],
+    "cov_ng": [
+      [
+        3.3428917998147407e-07,
+        -7.67707768223282e-10,
+        3.3428917998147407e-07
+      ],
+      [
+        -7.67707768223282e-10,
+        3.7909206224214455e-06,
+        -7.67707768223282e-10
+      ],
+      [
+        3.3428917998147407e-07,
+        -7.67707768223282e-10,
+        3.3428917998147407e-07
+      ]
+    ],
+    "referencia": {
+      "d_ref_um": [
+        2100.0,
+        760.0,
+        1600.0
+      ],
+      "sigma_d_ref_um": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "cov_d_ref_um2": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "incluida_en_cov_ng": true
+    }
+  },
+  "registro": {
+    "rms_um": 2.1931658460654893,
+    "iteraciones": 0,
+    "convergio": true,
+    "cond": 1.0,
+    "banderas": [],
+    "modo": "fijo",
+    "desviacion_absoluta_disponible": true,
+    "incertidumbre_marco_declarada": true,
+    "decision_CAD_absoluta_evaluable": true,
+    "covarianza": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "rotacion": [
+      [
+        0.999999830000007,
+        -0.000500059958330838,
+        -0.0002998999750041611
+      ],
+      [
+        0.0004999399583358306,
+        0.9999997950000086,
+        -0.0004000749666635471
+      ],
+      [
+        0.00030009997499584015,
+        0.0003999249666697878,
+        0.9999998750000052
+      ]
+    ],
+    "traslacion_um": [
+      40.0,
+      -25.0,
+      120.0
+    ],
+    "condicion": "pose sintética exacta; covarianza 0: escenario ideal, no precisión esperada del montaje real"
+  },
+  "espesor": {
+    "vidrio_ext": {
+      "media_um": 2099.594971793445,
+      "min_um": 2096.13892263767,
+      "max_um": 2102.92056137681,
+      "sigma_total_media_um": 0.7980081802096591,
+      "sigma_parcial_conocida_media_um": 0.7980081802096591,
+      "sigma_total_experimental_um": null,
+      "sigma_aleatoria_um": 0.12455140495519057,
+      "sigma_sistematica_um": 0.7954228539966872,
+      "fraccion_zona_fuera_de_tolerancia": 0.0
+    },
+    "pvb": {
+      "media_um": 759.6989528298146,
+      "min_um": 743.650374379977,
+      "max_um": 774.3445003535599,
+      "sigma_total_media_um": 1.0019415249608978,
+      "sigma_parcial_conocida_media_um": 1.0019415249608978,
+      "sigma_total_experimental_um": null,
+      "sigma_aleatoria_um": 0.17597987069001586,
+      "sigma_sistematica_um": 0.9999306898849061,
+      "fraccion_zona_fuera_de_tolerancia": 0.0
+    },
+    "vidrio_int": {
+      "media_um": 1600.3755571127026,
+      "min_um": 1598.3325053855367,
+      "max_um": 1602.6091052750758,
+      "sigma_total_media_um": 0.6099801204548837,
+      "sigma_parcial_conocida_media_um": 0.6099801204548837,
+      "sigma_total_experimental_um": null,
+      "sigma_aleatoria_um": 0.12828529733050323,
+      "sigma_sistematica_um": 0.6063571429535813,
+      "fraccion_zona_fuera_de_tolerancia": 0.0
+    }
+  },
+  "cuna_pvb_mrad": {
+    "indice_capa": 1,
+    "media": 0.3488855467092239,
+    "min": 0.24101592221930956,
+    "max": 0.4599207291351348,
+    "sigma_media": 0.006461146916034945,
+    "direccion": [
+      1.0,
+      0.0
+    ],
+    "fraccion_zona_fuera_de_tolerancia": 0.04518430439952437
+  },
+  "desviacion_vs_cad_um": {
+    "interfaz_0": {
+      "media": 1.131547711668832,
+      "rms": 2.1969309039224068,
+      "sigma_total_media": 0.5327078763205529,
+      "sigma_parcial_conocida_media": 0.5327078763205529,
+      "sigma_total_experimental": null,
+      "P_fuera_media": 3.1881403261677853e-60,
+      "condicion": "pose sintética exacta; covarianza 0: escenario ideal, no precisión esperada del montaje real"
+    },
+    "interfaz_1": {
+      "media": 1.536269646335922,
+      "rms": 3.1872409373944928,
+      "sigma_total_media": 0.9957400202362865,
+      "sigma_parcial_conocida_media": 0.9957400202362865,
+      "sigma_total_experimental": null,
+      "P_fuera_media": 5.626528932697159e-21,
+      "condicion": "pose sintética exacta; covarianza 0: escenario ideal, no precisión esperada del montaje real"
+    },
+    "interfaz_2": {
+      "media": 1.837211796678431,
+      "rms": 3.303566885674111,
+      "sigma_total_media": 1.4379587868604324,
+      "sigma_parcial_conocida_media": 1.4379587868604324,
+      "sigma_total_experimental": null,
+      "P_fuera_media": 6.966371817009558e-11,
+      "condicion": "pose sintética exacta; covarianza 0: escenario ideal, no precisión esperada del montaje real"
+    },
+    "interfaz_3": {
+      "media": 1.4614214124587497,
+      "rms": 2.7710200415993818,
+      "sigma_total_media": 1.8686427755067052,
+      "sigma_parcial_conocida_media": 1.8686427755067052,
+      "sigma_total_experimental": null,
+      "P_fuera_media": 5.385777532799334e-08,
+      "condicion": "pose sintética exacta; covarianza 0: escenario ideal, no precisión esperada del montaje real"
+    }
+  },
+  "gemelo": {
+    "espesor_medio_um": [
+      2099.480881170984,
+      759.5620946996816,
+      1600.4509078360068
+    ],
+    "cuna_media_mrad": 0.3488855467092239,
+    "cuna_min_max_mrad": [
+      0.24101592221930956,
+      0.4599207291351348
+    ],
+    "sensibilidad": {
+      "parametros": [
+        "d1",
+        "d2",
+        "d3",
+        "dn_g0",
+        "dn_g1"
+      ],
+      "sigma": [
+        0.8049416113820549,
+        1.0150366983751364,
+        0.6197298640806642,
+        0.0019470286650230507,
+        0.0005781774640899401
+      ],
+      "minimo_detectable": [
+        2.414824834146165,
+        3.045110095125409,
+        1.8591895922419925,
+        0.005841085995069152,
+        0.0017345323922698204
+      ],
+      "rango": 5,
+      "identificables": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    "distinguibilidad_medida_vs_nominal": {
+      "delta": 50.77239691222677,
+      "distinguibles_condicionales": true,
+      "resolucion_y_detectabilidad_caracterizadas": false
+    },
+    "supuestos": [
+      "distancia senal/ruido local; umbral 3 no es garantia de potencia de deteccion",
+      "indice de fase y dispersion de catalogo, no identificados por calibracion de grupo",
+      "comparacion de recetas con parametros fijos; no prueba estadistica de pieza"
+    ],
+    "imagen_doble_arcmin": 4.434543647172381,
+    "cuna_optima_mrad": 0.9865758084333253,
+    "eje_hud": "direccion_cuna debe apuntar desde fuente hacia ojo en el plano de incidencia HUD",
+    "incertidumbre_total_hud_arcmin": null,
+    "estado_hud": "predicción exploratoria",
+    "etiqueta_hud": "predicción exploratoria"
+  },
+  "cad": {
+    "archivos": {
+      "interfaz_0": "/tmp/casos/conforme/salida/cad/interfaz_0.stl",
+      "interfaz_1": "/tmp/casos/conforme/salida/cad/interfaz_1.stl",
+      "interfaz_2": "/tmp/casos/conforme/salida/cad/interfaz_2.stl",
+      "interfaz_3": "/tmp/casos/conforme/salida/cad/interfaz_3.stl",
+      "capa_1_vidrio_ext": "/tmp/casos/conforme/salida/cad/capa_1_vidrio_ext.stl",
+      "capa_2_pvb": "/tmp/casos/conforme/salida/cad/capa_2_pvb.stl",
+      "capa_3_vidrio_int": "/tmp/casos/conforme/salida/cad/capa_3_vidrio_int.stl"
+    },
+    "volumenes_um3": {
+      "vidrio_ext_1": 14834113788159.506,
+      "pvb_2": 5375826846014.93,
+      "vidrio_int_3": 11338178290984.389
+    },
+    "solidos_cerrados": {
+      "vidrio_ext_1": true,
+      "pvb_2": true,
+      "vidrio_int_3": true
+    }
+  },
+  "software": {
+    "motor": "0.4.0",
+    "python": "3.13.18",
+    "plataforma": "Linux-6.18.44-fc-v233-x86_64-with-glibc2.39",
+    "dependencias_nucleo": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "matplotlib": "3.11.2"
+    }
+  },
+  "veredicto": "no concluyente",
+  "motivos_no_concluyente": [
+    "validación experimental incompleta",
+    "origen real de datos no declarado"
+  ],
+  "condicion_CAD": "pose sintética exacta; covarianza 0: escenario ideal, no precisión esperada del montaje real",
+  "etiqueta_HUD": "predicción exploratoria",
+  "estado_prototipo": "prototipo de investigación endurecido, listo para iniciar validación experimental",
+  "validacion_cruzada": {
+    "z": [
+      0.0436147468809946,
+      -0.056292130916132846,
+      0.028944856819564723
+    ],
+    "ok": true,
+    "error_um": [
+      0.055251153731205704,
+      -0.08180729213756877,
+      0.03415545654934249
+    ],
+    "d_estimado_um": [
+      2050.055251153731,
+      799.9181927078624,
+      1650.0341554565493
+    ],
+    "sigma_combinada_um": [
+      1.266799825342601,
+      1.453263374581606,
+      1.1800181552895352
+    ],
+    "compatible_por_capa": [
+      true,
+      true,
+      true
+    ],
+    "criterio": "abs(z)<3 por capa; contraste puntual, no cobertura experimental global"
+  },
+  "trazabilidad": {
+    "semilla": null,
+    "config": "/tmp/casos/conforme/config.json",
+    "registro_fuente": "pose exacta del escenario sintetico",
+    "muestra_calibracion": "sintetica-ref-1",
+    "muestra_validacion": "sintetica-ref-2",
+    "remuestreo_espectral_habilitado": false,
+    "limite_remuestreo": "interpolación correlaciona ruido; calibración y repetibilidad deben usar la misma rejilla"
+  }
+}

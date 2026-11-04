@@ -1,0 +1,32 @@
+{
+  "lam0": 1.55,
+  "ruido": {"sigma_a": [0.3, 0.3, 0.3]},
+  "dos_mediciones": false,
+  "w_base_mrad": 0.35,
+  "receta_base": [
+    {"material": "BK7", "d": 2100.0},
+    {"material": "PVB_SUPUESTO", "d": 760.0},
+    {"material": "BK7", "d": 1600.0}
+  ],
+  "alternativas": [
+    {
+      "nombre": "PVB un micrometro mas grueso",
+      "w_mrad": 0.4,
+      "capas": [
+        {"material": "BK7", "d": 2100.0},
+        {"material": "PVB_SUPUESTO", "d": 761.0},
+        {"material": "BK7", "d": 1600.0}
+      ]
+    },
+    {
+      "nombre": "PVB propuesto con indice diferente",
+      "w_mrad": 0.3,
+      "capas": [
+        {"material": "SODOCALCICO_SUPUESTO", "d": 2100.0},
+        {"material": {"tipo": "cauchy", "A": 1.471, "B": 0.0051, "nombre": "PVB propuesto sin calibrar"}, "d": 760.0},
+        {"material": "SODOCALCICO_SUPUESTO", "d": 1600.0}
+      ]
+    }
+  ],
+  "hud": {"theta_i_deg": 62.0, "Rp": 600000.0, "Rv": 900000.0, "lam": 0.55}
+}

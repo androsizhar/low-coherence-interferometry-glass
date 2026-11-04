@@ -1,0 +1,3 @@
+STL en µm. Al importar en mm aplicar escala 0.001.
+pose sintética exacta; covarianza 0: escenario ideal, no precisión esperada del montaje real
+Veredicto: no concluyente

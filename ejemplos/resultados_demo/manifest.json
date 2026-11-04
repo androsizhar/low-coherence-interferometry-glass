@@ -1,0 +1,24 @@
+{
+  "version": "0.4.0",
+  "fecha_utc": "2026-11-04T20:26:04.021611+00:00",
+  "python": "3.13.18 (main, Oct 26 2026, 14:08:19) [Clang 23.1.3 ]",
+  "archivos_sha256": {
+    "cad/UNIDADES.txt": "fdf3e65bcc7ece85f120c56eaa20e187f25c9520a78588da7f8e537dcd463be5",
+    "cad/capa_1_vidrio_ext.stl": "f4617588ad4bf5809765b2015faf7927360a33bf4ffda9861bf10df7947fcd2e",
+    "cad/capa_2_pvb.stl": "86abc033974b041648e5e490670ebd8616eaa87c69d7bffe0205c5a3cdb742f8",
+    "cad/capa_3_vidrio_int.stl": "3dc860b9370108531e757e0e4f64de2133e7cd987157a62f4dfe546ce01a986b",
+    "cad/interfaz_0.stl": "2a2b85f944b503525c71afd3932699467b4064f4e995d5ccfd59b8b4d2a57687",
+    "cad/interfaz_1.stl": "06ea09f7dd9c7236b7f350ddf0652dd88c23851d5cec6f2d39c147bbf5cec021",
+    "cad/interfaz_2.stl": "bf64035c48eaa393b7388ae590d61a299accd39a193c8026f4889c05db22d74e",
+    "cad/interfaz_3.stl": "34dd01c7ee2a867a9a9a0089df80e34a1efb268d5e035f4961f0ad64b0a8a77c",
+    "corte.png": "2b2efd872728a4e4f54b50720d2f39437bbf86e790e709befae1a6aa8add6147",
+    "informe.json": "a4581ca58c4e160bd391c91499981f09b9f69f3e9d482d9414cafeb139c81598",
+    "informe.pdf": "6d5f9a96065424aeb723acc93419d60732b1ced208311d91b0f0e8a964066eca",
+    "mapas.npz": "3b576f3b11e2ef4aa26f3cdb398cb38e089809e9f1f3b68f97fea7c04aed30c9",
+    "mapas.png": "2cf13098157dfe1e977657e879d7b79e49e94dcc5176f35c0a329bcf54341754",
+    "vista_3d.png": "59f9ffd3d9d910fdee747b850d5ee0ca42cb9b72533126caed0bcd3a8db7a773"
+  },
+  "veredicto": "no concluyente",
+  "condicion_CAD": "pose sintética exacta; covarianza 0: escenario ideal, no precisión esperada del montaje real",
+  "origen": "local, sin envío de datos"
+}

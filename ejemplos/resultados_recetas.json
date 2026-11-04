@@ -1,0 +1,423 @@
+{
+  "version_esquema": 1,
+  "naturaleza": "predicciones condicionales; no validacion experimental",
+  "unidades": {
+    "longitudes_y_Rp_Rv": "um",
+    "lam0_y_hud_lam": "um",
+    "cuña": "mrad",
+    "covarianza_ruido": "um^2",
+    "imagen_doble": "arcmin"
+  },
+  "orden_capas": "exterior -> interior del auto",
+  "signo_cuna": "w>0: PVB crece hacia +x, desde fuente HUD hacia ojo; mismo eje al invertir capas",
+  "lam0_um": 1.55,
+  "observables": "solo caminos opticos de grupo por capa; sin amplitudes",
+  "ruido": {
+    "origen": "sigma_a; independencia entre capas SUPUESTA",
+    "covarianza_una_medicion_um2": [
+      [
+        0.09,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.09,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.09
+      ]
+    ],
+    "dos_mediciones_independientes": false,
+    "covarianza_comparacion_um2": [
+      [
+        0.09,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.09,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.09
+      ]
+    ]
+  },
+  "base": {
+    "espesores_um": [
+      2100.0,
+      760.0,
+      1600.0
+    ],
+    "materiales": [
+      "BK7",
+      "PVB_supuesto",
+      "BK7"
+    ],
+    "indices_grupo_modelo": [
+      1.520071676865076,
+      1.4766683662851197,
+      1.520071676865076
+    ],
+    "caminos_opticos_grupo_um": [
+      3192.1505214166596,
+      1122.267958376691,
+      2432.1146829841214
+    ],
+    "sensibilidad_indices_exactos": {
+      "hipotesis": "n_g conocido exactamente; error del material/modelo excluido",
+      "parametros": [
+        "d1",
+        "d2",
+        "d3"
+      ],
+      "sigma_um": [
+        0.19735911441933177,
+        0.20316003704658156,
+        0.19735911441933177
+      ],
+      "cambio_minimo_local_um": [
+        0.5920773432579953,
+        0.6094801111397447,
+        0.5920773432579953
+      ],
+      "covarianza_espesor_um2": [
+        [
+          0.038950620044382885,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.04127400065276839,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.038950620044382885
+        ]
+      ]
+    },
+    "sensibilidad_sin_prior_indice": {
+      "hipotesis": "un indice desconocido por capa; solo caminos opticos",
+      "parametros": [
+        "d1",
+        "d2",
+        "d3",
+        "dn_g0",
+        "dn_g1",
+        "dn_g2"
+      ],
+      "rango": 3,
+      "identificables": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "sigma": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "cambio_minimo_local": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "unidades_parametros": [
+        "um",
+        "um",
+        "um",
+        "adimensional",
+        "adimensional",
+        "adimensional"
+      ],
+      "null_significa": "no identificable con estos observables, no precision cero"
+    },
+    "w_mrad": 0.35,
+    "hud": {
+      "estado": "exploratorio",
+      "separacion_firmada_arcmin": 4.47022395571176,
+      "separacion_magnitud_arcmin": 4.47022395571176,
+      "sigma_total_arcmin": null,
+      "incertidumbre_modelo_incluida": false
+    }
+  },
+  "alternativas": [
+    {
+      "espesores_um": [
+        2100.0,
+        761.0,
+        1600.0
+      ],
+      "materiales": [
+        "BK7",
+        "PVB_supuesto",
+        "BK7"
+      ],
+      "indices_grupo_modelo": [
+        1.520071676865076,
+        1.4766683662851197,
+        1.520071676865076
+      ],
+      "caminos_opticos_grupo_um": [
+        3192.1505214166596,
+        1123.7446267429762,
+        2432.1146829841214
+      ],
+      "sensibilidad_indices_exactos": {
+        "hipotesis": "n_g conocido exactamente; error del material/modelo excluido",
+        "parametros": [
+          "d1",
+          "d2",
+          "d3"
+        ],
+        "sigma_um": [
+          0.19735911441933177,
+          0.20316003704658156,
+          0.19735911441933177
+        ],
+        "cambio_minimo_local_um": [
+          0.5920773432579953,
+          0.6094801111397447,
+          0.5920773432579953
+        ],
+        "covarianza_espesor_um2": [
+          [
+            0.038950620044382885,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.04127400065276839,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.038950620044382885
+          ]
+        ]
+      },
+      "sensibilidad_sin_prior_indice": {
+        "hipotesis": "un indice desconocido por capa; solo caminos opticos",
+        "parametros": [
+          "d1",
+          "d2",
+          "d3",
+          "dn_g0",
+          "dn_g1",
+          "dn_g2"
+        ],
+        "rango": 3,
+        "identificables": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "sigma": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "cambio_minimo_local": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "unidades_parametros": [
+          "um",
+          "um",
+          "um",
+          "adimensional",
+          "adimensional",
+          "adimensional"
+        ],
+        "null_significa": "no identificable con estos observables, no precision cero"
+      },
+      "w_mrad": 0.4,
+      "hud": {
+        "estado": "exploratorio",
+        "separacion_firmada_arcmin": 4.123802959556182,
+        "separacion_magnitud_arcmin": 4.123802959556182,
+        "sigma_total_arcmin": null,
+        "incertidumbre_modelo_incluida": false
+      },
+      "nombre": "PVB un micrometro mas grueso",
+      "comparacion_con_base": {
+        "distancia_mahalanobis": 4.922227887617131,
+        "umbral": 3.0,
+        "distinguible_condicional": true,
+        "contribuciones_blanqueadas": [
+          0.0,
+          -4.922227887617131,
+          0.0
+        ],
+        "error_clasificacion_ideal": 0.006925318504410832,
+        "hipotesis_error": "dos hipotesis simples gaussianas, igual covarianza, prior 1/2"
+      }
+    },
+    {
+      "espesores_um": [
+        2100.0,
+        760.0,
+        1600.0
+      ],
+      "materiales": [
+        "sodocalcico_supuesto",
+        "PVB propuesto sin calibrar",
+        "sodocalcico_supuesto"
+      ],
+      "indices_grupo_modelo": [
+        1.5164069719042665,
+        1.4773683662851198,
+        1.5164069719042665
+      ],
+      "caminos_opticos_grupo_um": [
+        3184.45464099896,
+        1122.799958376691,
+        2426.2511550468266
+      ],
+      "sensibilidad_indices_exactos": {
+        "hipotesis": "n_g conocido exactamente; error del material/modelo excluido",
+        "parametros": [
+          "d1",
+          "d2",
+          "d3"
+        ],
+        "sigma_um": [
+          0.1978360727419153,
+          0.20306377667633266,
+          0.1978360727419153
+        ],
+        "cambio_minimo_local_um": [
+          0.593508218225746,
+          0.609191330028998,
+          0.593508218225746
+        ],
+        "covarianza_espesor_um2": [
+          [
+            0.039139111677944406,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0412348973980555,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.039139111677944406
+          ]
+        ]
+      },
+      "sensibilidad_sin_prior_indice": {
+        "hipotesis": "un indice desconocido por capa; solo caminos opticos",
+        "parametros": [
+          "d1",
+          "d2",
+          "d3",
+          "dn_g0",
+          "dn_g1",
+          "dn_g2"
+        ],
+        "rango": 3,
+        "identificables": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "sigma": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "cambio_minimo_local": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "unidades_parametros": [
+          "um",
+          "um",
+          "um",
+          "adimensional",
+          "adimensional",
+          "adimensional"
+        ],
+        "null_significa": "no identificable con estos observables, no precision cero"
+      },
+      "w_mrad": 0.3,
+      "hud": {
+        "estado": "exploratorio",
+        "separacion_firmada_arcmin": 4.778659712629347,
+        "separacion_magnitud_arcmin": 4.778659712629347,
+        "sigma_total_arcmin": null,
+        "incertidumbre_modelo_incluida": false
+      },
+      "nombre": "PVB propuesto con indice diferente",
+      "comparacion_con_base": {
+        "distancia_mahalanobis": 32.29904698885961,
+        "umbral": 3.0,
+        "distinguible_condicional": true,
+        "contribuciones_blanqueadas": [
+          25.65293472566585,
+          -1.7733333333330847,
+          19.545093124315827
+        ],
+        "error_clasificacion_ideal": 5.722116109732968e-59,
+        "hipotesis_error": "dos hipotesis simples gaussianas, igual covarianza, prior 1/2"
+      }
+    }
+  ],
+  "comprobaciones_equipo": {
+    "resolucion_de_interfaces_verificada": false,
+    "rango_del_escaner_verificado": false,
+    "banda_y_muestreo_espectral_verificados": false
+  },
+  "limites": [
+    "Distinguibilidad presupone que todas las interfaces se localizan: faltan banda, rejilla espectral, rango y contraste medidos.",
+    "El ruido suministrado debe provenir de repetibilidad real; el programa no certifica su origen.",
+    "Indices del catalogo/modelo son supuestos para la receta; no sustituyen calibracion ni validacion con una segunda muestra.",
+    "Cambio minimo = 3 sigma es local y gaussiano; no garantiza una potencia de deteccion ni error de clasificacion de 0.3%.",
+    "HUD es trazado local 2D, tres capas, solo cuña PVB, sin curvatura, polarizacion, intensidad ni dispersion validada; sigma total desconocida."
+  ]
+}

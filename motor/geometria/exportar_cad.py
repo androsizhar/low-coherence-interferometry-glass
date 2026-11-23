@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import os
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Dict, Sequence
+from pathlib import Path
 
 import numpy as np
 
@@ -115,9 +115,9 @@ def es_cerrada(m: Malla) -> bool:
 
 @dataclass
 class ReporteExportacion:
-    archivos: Dict[str, str]
-    volumenes_um3: Dict[str, float]
-    cerradas: Dict[str, bool]
+    archivos: dict[str, str]
+    volumenes_um3: dict[str, float]
+    cerradas: dict[str, bool]
 
 
 def exportar_stl(
@@ -142,18 +142,19 @@ def exportar_stl(
     for m in superficies + capas:
         with np.errstate(over="ignore", invalid="ignore"):
             Malla(m.v.astype(np.float32).astype(float), m.f)
-    os.makedirs(carpeta, exist_ok=True)
+    carpeta = Path(carpeta)
+    carpeta.mkdir(parents=True, exist_ok=True)
     arch, vol, cer = {}, {}, {}
     for k, m in enumerate(superficies):
-        ruta = os.path.join(carpeta, f"interfaz_{k}.stl")
+        ruta = carpeta / f"interfaz_{k}.stl"
         escribir_stl(ruta, m, nombre=f"interfaz_{k}")
-        arch[f"interfaz_{k}"] = ruta
+        arch[f"interfaz_{k}"] = str(ruta)
     for j, nom in enumerate(nombres_capas):
         m = capas[j]
         ok = es_cerrada(m)
-        ruta = os.path.join(carpeta, f"capa_{j + 1}_{nom}.stl")
+        ruta = carpeta / f"capa_{j + 1}_{nom}.stl"
         escribir_stl(ruta, m, nombre=nom)
-        arch[f"capa_{j + 1}_{nom}"] = ruta
+        arch[f"capa_{j + 1}_{nom}"] = str(ruta)
         vol[nom + f"_{j + 1}"] = m.volumen()
         cer[nom + f"_{j + 1}"] = ok
     return ReporteExportacion(archivos=arch, volumenes_um3=vol, cerradas=cer)

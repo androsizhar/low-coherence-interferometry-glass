@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -32,7 +31,7 @@ class Instrumento:
     offset: float
     sigma_ruido: float = 0.0
     alpha: float = 0.0
-    limites_saturacion: Optional[tuple] = None
+    limites_saturacion: tuple | None = None
 
     def validar(self):
         if self.limites_saturacion is not None:
@@ -62,7 +61,7 @@ class Medicion:
     posicion: np.ndarray
     normal: np.ndarray
     id: int = 0
-    cov_normal: Optional[np.ndarray] = None
+    cov_normal: np.ndarray | None = None
 
     def validar(self):
         validar_espectro(self.k, self.I)
@@ -78,7 +77,7 @@ class Medicion:
             raise ErrorDeEntrada("posicion debe tener 3 componentes finitas (um)")
 
 
-def remuestrear_a_k_uniforme(lam: np.ndarray, I: np.ndarray, N: Optional[int] = None):
+def remuestrear_a_k_uniforme(lam: np.ndarray, I: np.ndarray, N: int | None = None):
     lam, I = np.asarray(lam, float), np.asarray(I, float)
     if lam.shape != I.shape or lam.ndim != 1 or lam.size < 4:
         raise ErrorDeEntrada("lam e I deben ser 1-D del mismo tamano y tener >= 4 muestras")

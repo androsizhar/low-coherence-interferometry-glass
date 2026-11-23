@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass
 
 import numpy as np
@@ -26,8 +27,6 @@ def _cruz(a, b):
 
 @dataclass
 class TrazadoFantasma:
-    x_entrada: float
-    x_salida: float
     d_salida: np.ndarray
     fallo_en_ojo: float
 
@@ -93,10 +92,8 @@ def _resolver_hasta_ojo(trazador, S, E, x1, t):
         xs = np.linspace(x1 - factor * t, x1 + factor * t, 241)
         fs = np.full(xs.size, np.nan)
         for i, x in enumerate(xs):
-            try:
+            with contextlib.suppress(ErrorDeEntrada):
                 fs[i] = f(x)
-            except ErrorDeEntrada:
-                pass
         exactos = np.flatnonzero(fs == 0)
         candidatos = [(abs(xs[i] - x1), i, True) for i in exactos]
         cambios = np.flatnonzero(
@@ -111,9 +108,7 @@ def _resolver_hasta_ojo(trazador, S, E, x1, t):
                     else brentq(f, xs[i], xs[i + 1], xtol=1e-10, rtol=1e-14, maxiter=200)
                 )
                 Xb, d_out = trazador(xa)
-                return TrazadoFantasma(
-                    float(xa), float(Xb[0]), d_out, abs(float(_cruz(d_out, E - Xb)))
-                )
+                return TrazadoFantasma(d_out, abs(float(_cruz(d_out, E - Xb))))
             except ErrorDeEntrada:
                 pass
     raise ErrorDeEntrada(
@@ -137,32 +132,6 @@ def separacion_imagen_doble(
     _, _, _, d_prim = _geometria(theta_i, Rp, Rv)
     tr = trazar_fantasma(t, w, n, theta_i, Rp, Rv)
     return float(np.arctan2(_cruz(d_prim, tr.d_salida), float(np.dot(d_prim, tr.d_salida))))
-
-
-def separacion_por_cuna_analitica(
-    w: float, n: float, theta_i: float, Rp: float = None, Rv: float = None
-) -> float:
-    _validar(1.0, n, theta_i, 1.0 if Rp is None else Rp, 1.0 if Rv is None else Rv)
-    _validar_cuna(w)
-    if (Rp is None) != (Rv is None):
-        raise ErrorDeEntrada("proporcionar Rp y Rv juntos")
-    theta_t = np.arcsin(np.sin(theta_i) / n)
-    giro = 2.0 * n * w * np.cos(theta_t) / np.cos(theta_i)
-    if Rp is None or Rv is None:
-        return giro
-    return -giro * Rp / (Rp + Rv)
-
-
-def cuna_optima(
-    t: float, n: float, theta_i: float, Rp: float, Rv: float, w_max: float = 5e-3
-) -> float:
-    if not np.isfinite(w_max) or not 0 < w_max < np.pi / 2:
-        raise ErrorDeEntrada("w_max debe ser finito y estar entre 0 y pi/2")
-    f = lambda w: separacion_imagen_doble(t, w, n, theta_i, Rp, Rv)
-    a, b = -w_max, w_max
-    if f(a) * f(b) > 0:
-        raise ErrorDeEntrada("la cuna optima esta fuera de +-w_max")
-    return float(brentq(f, a, b, xtol=1e-14, rtol=1e-12))
 
 
 def _laminado(espesores, indices, w):

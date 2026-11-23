@@ -1,12 +1,11 @@
 import numpy as np
 import pytest
+from scipy.optimize import brentq
 
 from motor.analisis.imagen_doble import (
-    cuna_optima,
     cuna_optima_laminado,
     separacion_imagen_doble,
     separacion_laminado,
-    separacion_por_cuna_analitica,
     trazar_fantasma,
     trazar_fantasma_laminado,
 )
@@ -15,6 +14,18 @@ from motor.medicion.lectura import ErrorDeEntrada
 N, TH = 1.52, np.deg2rad(62.0)
 T = 4460.0
 LEJOS = 1e11
+
+
+def separacion_por_cuna_analitica(w, n, theta_i, Rp, Rv):
+    """Referencia de primer orden para contrastar el trazador numérico."""
+    theta_t = np.arcsin(np.sin(theta_i) / n)
+    return -2.0 * n * w * np.cos(theta_t) / np.cos(theta_i) * Rp / (Rp + Rv)
+
+
+def cuna_optima(t, n, theta_i, Rp, Rv, w_max=5e-3):
+    return brentq(
+        lambda w: separacion_imagen_doble(t, w, n, theta_i, Rp, Rv), -w_max, w_max, xtol=1e-14
+    )
 
 
 def test_sin_cuna_y_muy_lejos_no_hay_separacion_angular():
@@ -102,5 +113,3 @@ def test_cuna_no_finita_o_vertical_se_rechaza(w):
 def test_hud_laminado_no_acepta_recetas_de_otro_numero_de_capas():
     with pytest.raises(ErrorDeEntrada):
         separacion_laminado([2000, 2000], [N, N], 0, TH, 600e3, 900e3)
-    with pytest.raises(ErrorDeEntrada):
-        separacion_por_cuna_analitica(0.001, N, TH, Rp=600e3)

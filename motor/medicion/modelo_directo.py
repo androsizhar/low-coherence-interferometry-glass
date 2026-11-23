@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 import numpy as np
 
@@ -35,16 +35,8 @@ def camino_optico_grupo(capas: Sequence[Capa], lam0: float) -> np.ndarray:
     return np.array([float(c.material.n_grupo(lam0)) * c.d for c in capas])
 
 
-def camino_optico_fase(capas: Sequence[Capa], lam0: float) -> np.ndarray:
-    return np.array([float(c.material.n(lam0)) * c.d for c in capas])
-
-
 def confocal(capas: Sequence[Capa], lam0: float, alpha: float) -> np.ndarray:
     return np.array([c.d * float(g_conf(c.material.n(lam0), alpha)) for c in capas])
-
-
-def observables(capas: Sequence[Capa], lam0: float, alpha: float = 0.0):
-    return camino_optico_grupo(capas, lam0), confocal(capas, lam0, alpha)
 
 
 def indices_apilado(capas: Sequence[Capa], lam0: float, n_ext: float = 1.0) -> np.ndarray:

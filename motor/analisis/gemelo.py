@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import List, Optional, Sequence
 
 import numpy as np
 from scipy.special import ndtr
@@ -22,12 +22,12 @@ from motor.medicion.modelo_directo import (
 class ConfigGemelo:
     lam0: float = 1.55
     sigma_a: float = 0.3
-    sigma_lnA: Optional[float] = None
-    alpha: Optional[float] = None
+    sigma_lnA: float | None = None
+    alpha: float | None = None
     sigma_c: float = 1.0
-    covarianza: Optional[np.ndarray] = None
-    separacion_minima_a: Optional[float] = None
-    amplitud_minima: Optional[float] = None
+    covarianza: np.ndarray | None = None
+    separacion_minima_a: float | None = None
+    amplitud_minima: float | None = None
 
     def __post_init__(self):
         if not np.isfinite(self.lam0) or self.lam0 <= 0:
@@ -49,10 +49,6 @@ class ConfigGemelo:
             raise ErrorDeEntrada("alpha debe estar en [0, pi/2)")
 
 
-def _con_indices(capas: Sequence[Capa], dn: np.ndarray) -> List[Capa]:
-    return [Capa(Desplazado(c.material, float(x)), c.d) for c, x in zip(capas, dn)]
-
-
 def vector_observables(capas: Sequence[Capa], cfg: ConfigGemelo) -> np.ndarray:
     A = np.abs(amplitudes_pico(capas, cfg.lam0))
     if np.any(A <= 1e-12):
@@ -63,7 +59,7 @@ def vector_observables(capas: Sequence[Capa], cfg: ConfigGemelo) -> np.ndarray:
     a = camino_optico_grupo(capas, cfg.lam0)
     if cfg.separacion_minima_a is not None and np.any(a < cfg.separacion_minima_a):
         raise ErrorDeEntrada("picos no resueltos segun separacion_minima_a del instrumento")
-    if cfg.amplitud_minima is not None and np.any(A < cfg.amplitud_minima):
+    if cfg.amplitud_minima is not None and np.any(cfg.amplitud_minima > A):
         raise ErrorDeEntrada("interfaz por debajo de amplitud_minima del instrumento")
     y = [a]
     if cfg.alpha is not None:
@@ -140,7 +136,7 @@ def distinguibilidad(
 
 @dataclass
 class Sensibilidad:
-    nombres: List[str]
+    nombres: list[str]
     J: np.ndarray
     fisher: np.ndarray
     rango: int
@@ -152,12 +148,12 @@ class Sensibilidad:
 def sensibilidad(
     capas: Sequence[Capa],
     cfg: ConfigGemelo,
-    grupos: Optional[Sequence[int]] = None,
-    sigma_prior_dn: Optional[Sequence[float]] = None,
+    grupos: Sequence[int] | None = None,
+    sigma_prior_dn: Sequence[float] | None = None,
     umbral: float = 3.0,
     tol_rango: float = 1e-9,
     *,
-    cov_prior_dn: Optional[np.ndarray] = None,
+    cov_prior_dn: np.ndarray | None = None,
 ) -> Sensibilidad:
     n = len(capas)
     if n == 0 or not np.isfinite(umbral) or umbral <= 0 or not 0 < tol_rango < 1:
@@ -234,16 +230,8 @@ class ParametrosHUD:
             raise ErrorDeEntrada("HUD requiere 0 < theta_i < pi/2, Rp,Rv,lam > 0, finitos")
 
     @staticmethod
-    def ejemplo() -> "ParametrosHUD":
+    def ejemplo() -> ParametrosHUD:
         return ParametrosHUD(theta_i=np.deg2rad(62.0), Rp=600e3, Rv=900e3)
-
-
-def n_efectivo(capas: Sequence[Capa], lam: float = 0.55) -> float:
-    if not capas:
-        raise ErrorDeEntrada("se requiere al menos una capa")
-    d = np.array([c.d for c in capas])
-    n = np.array([float(c.material.n(lam)) for c in capas])
-    return float((n * d).sum() / d.sum())
 
 
 def imagen_doble_receta(capas: Sequence[Capa], w: float, hud: ParametrosHUD) -> float:
@@ -271,13 +259,13 @@ def cuna_optima_receta(capas: Sequence[Capa], hud: ParametrosHUD) -> float:
 @dataclass
 class PrediccionHUD:
     separacion_arcmin: float
-    sigma_parametros_arcmin: Optional[float]
-    jacobiano: Optional[np.ndarray]
+    sigma_parametros_arcmin: float | None
+    jacobiano: np.ndarray | None
     incertidumbre_modelo_incluida: bool = False
 
 
 def predecir_imagen_doble(
-    capas: Sequence[Capa], w: float, hud: ParametrosHUD, cov_parametros: Optional[np.ndarray] = None
+    capas: Sequence[Capa], w: float, hud: ParametrosHUD, cov_parametros: np.ndarray | None = None
 ) -> PrediccionHUD:
     media = imagen_doble_receta(capas, w, hud)
     if cov_parametros is None:

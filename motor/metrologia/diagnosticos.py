@@ -35,7 +35,7 @@ def covarianza_normal(normal, cov):
 
 
 def diagnostico_incidencia(n_in, normal_cad, d, indices_fase=None, cov_normales=None):
-    n_in, normal_cad, d = map(lambda a: np.asarray(a, float), (n_in, normal_cad, d))
+    n_in, normal_cad, d = (np.asarray(a, float) for a in (n_in, normal_cad, d))
     producto = np.sum(n_in * normal_cad, axis=-1)
     if np.any(producto >= 0):
         raise ErrorDeEntrada(
@@ -57,7 +57,7 @@ def diagnostico_incidencia(n_in, normal_cad, d, indices_fase=None, cov_normales=
     sigma_theta = None
     if cov_normales is not None and all(C is not None for C in cov_normales):
         valores = []
-        for n, nc, ang, C in zip(n_in, normal_cad, theta, cov_normales):
+        for _n, nc, ang, C in zip(n_in, normal_cad, theta, cov_normales):
             if abs(np.sin(ang)) < 1e-7:
                 valores.append(np.sqrt(max(float(np.linalg.eigvalsh(C).max()), 0)))
             else:

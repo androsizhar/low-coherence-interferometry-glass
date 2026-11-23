@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -20,11 +21,11 @@ UM = 1e3
 @pytest.fixture(scope="module")
 def corrida(tmp_path_factory):
     carpeta = str(tmp_path_factory.mktemp("salida"))
-    return correr_demo(carpeta, ruido=0.01, semilla=0, n_lado=11, verbose=False) + (carpeta,)
+    return (*correr_demo(carpeta, ruido=0.01, semilla=0, n_lado=11, verbose=False), carpeta)
 
 
 def test_sin_defectos_calibracion_y_validacion_ok(corrida):
-    esc, cfg, cal, res, inf, _ = corrida
+    _esc, _cfg, cal, res, inf, _ = corrida
     assert not res.ids_defecto
     assert cal.ok and inf["validacion_cruzada"]["ok"]
     assert inf["registro"]["convergio"]
@@ -32,7 +33,7 @@ def test_sin_defectos_calibracion_y_validacion_ok(corrida):
 
 
 def test_espesor_por_punto_contra_la_verdad(corrida):
-    esc, cfg, cal, res, inf, _ = corrida
+    esc, _cfg, _cal, res, _inf, _ = corrida
     err = res.d_puntos - esc.verdad_d[res.ids_ok]
     assert np.all(np.sqrt((err**2).mean(axis=0)) < 0.5), np.sqrt((err**2).mean(axis=0))
     z = err / np.sqrt(res.sigma_aleatoria**2 + res.sigma_sistematica**2)
@@ -40,7 +41,7 @@ def test_espesor_por_punto_contra_la_verdad(corrida):
 
 
 def test_mapas_de_espesor_y_cuna_contra_la_verdad(corrida):
-    esc, cfg, cal, res, inf, _ = corrida
+    _esc, _cfg, _cal, res, _inf, _ = corrida
     X, Y = res.Xg, res.Yg
     dtrue = D.espesores_verdaderos(X, Y)
     for j in range(3):
@@ -58,7 +59,7 @@ def test_mapas_de_espesor_y_cuna_contra_la_verdad(corrida):
 
 
 def test_desviacion_contra_cad_limitada_por_el_registro(corrida):
-    esc, cfg, cal, res, inf, _ = corrida
+    esc, _cfg, _cal, res, _inf, _ = corrida
     err = res.delta_puntos - esc.verdad_delta[:, res.ids_ok]
     assert np.all(np.sqrt((err**2).mean(axis=1)) < 4.0), np.sqrt((err**2).mean(axis=1))
     dif = err[3] - err[0]
@@ -66,7 +67,7 @@ def test_desviacion_contra_cad_limitada_por_el_registro(corrida):
 
 
 def test_stl_cerrados_y_volumenes_coherentes(corrida):
-    esc, cfg, cal, res, inf, _ = corrida
+    _esc, _cfg, _cal, _res, inf, _ = corrida
     cad = inf["cad"]
     assert all(cad["solidos_cerrados"].values())
     v = cad["volumenes_um3"]
@@ -79,7 +80,7 @@ def test_stl_cerrados_y_volumenes_coherentes(corrida):
 
 
 def test_gemelo_identifica_y_calcula_imagen_doble(corrida):
-    esc, cfg, cal, res, inf, _ = corrida
+    _esc, _cfg, _cal, _res, inf, _ = corrida
     g = inf["gemelo"]
     assert all(g["sensibilidad"]["identificables"]) and g["sensibilidad"]["rango"] == 5
     assert np.isfinite(g["imagen_doble_arcmin"]) and np.isfinite(g["cuna_optima_mrad"])
@@ -90,11 +91,11 @@ def test_archivos_de_salida(corrida):
     *_, carpeta = corrida
     for f in ("informe.json", "mapas.npz", "mapas.png"):
         assert os.path.exists(os.path.join(carpeta, f))
-    json.load(open(os.path.join(carpeta, "informe.json"), encoding="utf-8"))
+    json.loads(Path(carpeta, "informe.json").read_text(encoding="utf-8"))
 
 
 def test_punto_danado_se_marca_y_se_excluye():
-    cfg, demo = configuracion_demo()
+    cfg, _demo = configuracion_demo()
     esc = D.generar_escenario(n_lado=9, ruido=0.01, semilla=3)
     rng = np.random.default_rng(0)
     esc.mediciones[4].I = 0.01 * rng.standard_normal(esc.mediciones[4].I.size)
@@ -106,7 +107,7 @@ def test_punto_danado_se_marca_y_se_excluye():
 
 
 def test_muy_pocos_puntos_validos_detiene_el_programa():
-    cfg, demo = configuracion_demo()
+    cfg, _demo = configuracion_demo()
     esc = D.generar_escenario(n_lado=4, ruido=0.01, semilla=3)
     k, Is = D.muestra_referencia(np.array([2100.0, 760.0, 1600.0]), 30, 0.01, 7)
     cal = calibrar_desde_interferogramas(k, Is, [2100.0, 760.0, 1600.0], [1.0, 1.0, 1.0], cfg)

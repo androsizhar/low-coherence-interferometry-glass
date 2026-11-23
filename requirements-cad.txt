@@ -1,0 +1,3 @@
+# Opcional: lectura de STEP/IGES/BREP con OpenCASCADE (python main.py importar-cad pieza.step)
+# En Linux necesita además libGLU (p. ej. apt install libglu1-mesa).
+gmsh>=4.11

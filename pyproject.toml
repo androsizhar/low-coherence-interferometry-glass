@@ -1,0 +1,38 @@
+# Configuración de herramientas. Las dependencias de ejecución siguen en requirements.txt
+# (las usan los lanzadores iniciar.command / iniciar.bat).
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "F",     # pyflakes: nombres e importaciones sin uso
+    "E4", "E7", "E9",
+    "I",     # orden de importaciones
+    "UP",    # sintaxis moderna de Python 3.11+
+    "B",     # errores probables
+    "C4",    # comprensiones
+    "SIM",   # simplificaciones
+    "PIE",
+    "PERF",
+    "RUF",
+    "NPY",   # API de NumPy 2
+    "PTH",   # pathlib
+    "FURB",
+]
+ignore = [
+    "RUF001", "RUF002", "RUF003",  # µ, ±, – y comillas tipográficas son texto en español intencional
+    "B905",    # zip(strict=...) no se exige en todo el código numérico
+    "E731",    # lambdas cortas asignadas a nombres locales
+    "SIM108",  # no forzar operadores ternarios
+    "E741",    # I (intensidad) y l son notación física
+    "RUF005",  # [*a, b] rompe sumas de NumPy (a + [x, y]): no aplicar
+]
+
+[tool.ruff.lint.per-file-ignores]
+"verificacion/*" = ["B011", "PTH"]
+
+[tool.pytest.ini_options]
+testpaths = ["verificacion"]
+addopts = "-q"

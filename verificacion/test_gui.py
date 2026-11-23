@@ -6,10 +6,7 @@ from pathlib import Path
 import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-try:
-    import PySide6
-except ImportError:
-    pytest.importorskip("PyQt6", reason="GUI opcional: no hay binding Qt local")
+pytest.importorskip("PySide6", reason="GUI opcional: PySide6 no instalado")
 
 from motor.estado import aplicar_estado
 from motor.interfaz.componentes import Trabajador
@@ -224,9 +221,9 @@ def test_valida_rutas_seleccionadas_aunque_original_no_exista(ventana, tmp_path)
     assert not ventana.validar()
     ventana._rutas["mediciones"].setText(str(tmp_path / "medicion_nueva.npz"))
     assert ventana.validar()
-    assert not (
-        tmp_path / "config_interfaz.json"
-    ).exists(), "La revisión inmediata no debe escribir archivos del proyecto"
+    assert not (tmp_path / "config_interfaz.json").exists(), (
+        "La revisión inmediata no debe escribir archivos del proyecto"
+    )
 
 
 def test_gemelo_usa_covarianza_medida_sin_inventar_independencia(ventana, monkeypatch):

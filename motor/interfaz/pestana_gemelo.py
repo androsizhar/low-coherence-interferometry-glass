@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from motor import RAIZ
 from motor.interfaz.componentes import (
@@ -98,8 +99,7 @@ class PestanaGemelo:
             self, "Cargar receta", str(self.proyecto or "."), "JSON (*.json)"
         )
         if ruta:
-            with open(ruta, encoding="utf-8") as archivo:
-                self.receta.setPlainText(archivo.read())
+            self.receta.setPlainText(Path(ruta).read_text(encoding="utf-8"))
             self.usar_json.setChecked(True)
 
     def _receta_desde_tabla(self):
@@ -154,7 +154,7 @@ class PestanaGemelo:
     def _gemelo_evaluado(self, resultado):
         self._ultimo_gemelo = resultado
         lineas = ["Ruido: " + str(resultado.get("ruido", {}).get("origen", "no declarado"))]
-        for receta in [resultado.get("base", {})] + resultado.get("alternativas", []):
+        for receta in [resultado.get("base", {}), *resultado.get("alternativas", [])]:
             lineas += ["", receta.get("nombre", "Receta base")]
             lineas.append(
                 "Espesores (µm): " + ", ".join(texto(x) for x in receta.get("espesores_um", []))

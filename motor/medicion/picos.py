@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 from scipy.optimize import minimize_scalar
@@ -18,7 +18,7 @@ class ResultadoPicos:
     amp: np.ndarray
     snr: np.ndarray
     sigma_L: np.ndarray
-    banderas: List[str] = field(default_factory=list)
+    banderas: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -55,7 +55,7 @@ def _refinar_periodograma(k: np.ndarray, s: np.ndarray, L0: float, dL: float) ->
     kc = k - k.mean()
 
     def negP(L):
-        return -np.abs(np.dot(s, np.exp(-1j * kc * L))) ** 2
+        return -(np.abs(np.dot(s, np.exp(-1j * kc * L))) ** 2)
 
     res = minimize_scalar(
         negP, bounds=(L0 - dL, L0 + dL), method="bounded", options={"xatol": 1e-5}
@@ -67,7 +67,7 @@ def detectar_picos(
     k: np.ndarray,
     I: np.ndarray,
     n_picos: int,
-    ventanas: Optional[Sequence[Tuple[float, float]]] = None,
+    ventanas: Sequence[tuple[float, float]] | None = None,
     L_min: float = 0.0,
     sep_min: float = 300.0,
     snr_min: float = 8.0,
@@ -96,7 +96,7 @@ def detectar_picos(
         raise ErrorDeEntrada(
             "L_min >= 0, sep_min/snr_min > 0 y apodizacion en [0,1], todos finitos"
         )
-    banderas: List[str] = []
+    banderas: list[str] = []
     if ventanas is not None:
         ventanas = np.asarray(ventanas, float)
         if ventanas.shape != (n_picos, 2) or not np.all(np.isfinite(ventanas)):

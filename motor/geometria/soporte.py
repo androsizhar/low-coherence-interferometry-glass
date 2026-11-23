@@ -32,6 +32,59 @@ def dentro_poligono(xy, poligono):
     return interior | borde
 
 
+def dentro_region(xy, lazos):
+    """Región con huecos: regla par-impar sobre todos sus lazos."""
+    if not lazos:
+        raise ErrorDeEntrada("región sin lazos")
+    out = None
+    for lazo in lazos:
+        m = dentro_poligono(xy, lazo)
+        out = m if out is None else out ^ m
+    return out
+
+
+def resolver_zonas_cad(especificacion, zonas, clave_destino):
+    """Sustituye nombres de zonas del CAD importado por sus lazos (marco local, µm)."""
+    if especificacion is None:
+        return None
+    out = dict(especificacion)
+    for clave, destino in (
+        ("incluir_zonas_cad", "incluir_regiones"),
+        ("excluir_zonas_cad", "excluir_regiones"),
+    ):
+        nombres = out.pop(clave, None)
+        if not nombres:
+            continue
+        if zonas is None:
+            raise ErrorDeEntrada(f"{clave_destino}.{clave} requiere cad_importado en config.json")
+        faltan = [n for n in nombres if n not in zonas]
+        if faltan:
+            raise ErrorDeEntrada(
+                f"zonas no encontradas en el CAD importado: {faltan}; hay {sorted(zonas)}"
+            )
+        out.setdefault(destino, []).extend(zonas[n] for n in nombres)
+    return out
+
+
+def resolver_zonas_tolerancia(zonas_tolerancia, zonas):
+    out = []
+    for i, zona in enumerate(zonas_tolerancia or []):
+        if isinstance(zona, dict) and "zona_cad" in zona:
+            if zonas is None:
+                raise ErrorDeEntrada(f"zonas_tolerancia[{i}].zona_cad requiere cad_importado")
+            if zona["zona_cad"] not in zonas:
+                raise ErrorDeEntrada(
+                    f"zonas_tolerancia[{i}]: zona '{zona['zona_cad']}' no está en el CAD importado; hay {sorted(zonas)}"
+                )
+            nueva = {k: v for k, v in zona.items() if k != "zona_cad"}
+            nueva.setdefault("nombre", zona["zona_cad"])
+            nueva["poligonos_xy_um"] = zonas[zona["zona_cad"]]
+            out.append(nueva)
+        else:
+            out.append(zona)
+    return out
+
+
 def cargar_especificacion(especificacion, base):
     if especificacion is None:
         return None
@@ -105,26 +158,35 @@ def aplicar_mascara(X, Y, soporte_convexo, especificacion=None):
             raise ErrorDeEntrada(
                 f"máscara de adquisición: matriz booleana de forma {X.shape}, sin remuestreo implícito"
             )
-        if "X" in especificacion or "Y" in especificacion:
-            if not all(
-                k in especificacion
-                and np.shape(especificacion[k]) == X.shape
-                and np.allclose(especificacion[k], ref, atol=1e-6, rtol=0)
-                for k, ref in (("X", X), ("Y", Y))
-            ):
-                raise ErrorDeEntrada(
-                    "X/Y de la máscara no coinciden con la rejilla CAD en µm; corrige la rejilla o la máscara"
-                )
+        if ("X" in especificacion or "Y" in especificacion) and not all(
+            k in especificacion
+            and np.shape(especificacion[k]) == X.shape
+            and np.allclose(especificacion[k], ref, atol=1e-6, rtol=0)
+            for k, ref in (("X", X), ("Y", Y))
+        ):
+            raise ErrorDeEntrada(
+                "X/Y de la máscara no coinciden con la rejilla CAD en µm; corrige la rejilla o la máscara"
+            )
         mascara &= a
     incluir = especificacion.get("incluir", [])
-    if incluir:
-        mascara &= np.logical_or.reduce([dentro_poligono(xy, p) for p in incluir])
+    incluir_reg = especificacion.get("incluir_regiones", [])
+    if incluir or incluir_reg:
+        mascara &= np.logical_or.reduce(
+            [dentro_poligono(xy, p) for p in incluir] + [dentro_region(xy, r) for r in incluir_reg]
+        )
     for p in especificacion.get("excluir", []):
         mascara &= ~dentro_poligono(xy, p)
         mascara = _quitar_celdas_no_resueltas(mascara, _celdas_cruzadas(X, Y, p))
-    for p in incluir:
+    for r in especificacion.get("excluir_regiones", []):
+        mascara &= ~dentro_region(xy, r)
+        for p in r:
+            mascara = _quitar_celdas_no_resueltas(mascara, _celdas_cruzadas(X, Y, p))
+    for p in incluir + [p for r in incluir_reg for p in r]:
         mascara = _quitar_celdas_no_resueltas(mascara, _celdas_cruzadas(X, Y, p))
-    if not any(k in especificacion for k in ("mascara", "incluir", "excluir")):
+    if not any(
+        k in especificacion
+        for k in ("mascara", "incluir", "excluir", "incluir_regiones", "excluir_regiones")
+    ):
         raise ErrorDeEntrada("máscara de adquisición vacía: declara archivo NPZ, incluir o excluir")
     return mascara
 
@@ -140,9 +202,14 @@ def mapas_tolerancia(X, Y, tol_d, tol_w, tol_delta=None, zonas=()):
         ).copy()
     )
     for i, zona in enumerate(zonas or []):
-        if not isinstance(zona, dict) or "poligono_xy_um" not in zona:
-            raise ErrorDeEntrada(f"zonas_tolerancia[{i}]: falta poligono_xy_um")
-        m = dentro_poligono(np.stack([X, Y], axis=-1), zona["poligono_xy_um"])
+        if not isinstance(zona, dict) or not (
+            "poligono_xy_um" in zona or "poligonos_xy_um" in zona
+        ):
+            raise ErrorDeEntrada(f"zonas_tolerancia[{i}]: falta poligono_xy_um o zona_cad")
+        if "poligono_xy_um" in zona:
+            m = dentro_poligono(np.stack([X, Y], axis=-1), zona["poligono_xy_um"])
+        else:
+            m = dentro_region(np.stack([X, Y], axis=-1), zona["poligonos_xy_um"])
         for nombre, destino, n in (
             ("tol_d", td, len(tol_d)),
             ("tol_w", tw, 1),

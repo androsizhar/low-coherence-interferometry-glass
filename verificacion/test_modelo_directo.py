@@ -10,9 +10,10 @@ from motor.medicion.materiales import (
 from motor.medicion.modelo_directo import (
     Capa,
     amplitudes_pico,
+    camino_optico_grupo,
+    confocal,
     g_conf,
     jacobiano,
-    observables,
     r_interfaces,
 )
 
@@ -49,7 +50,7 @@ def test_g_conf_limite_paraxial_y_apertura():
 
 def test_observables_forma():
     capas = [Capa(BK7, 2100.0), Capa(PVB_SUPUESTO, 760.0), Capa(BK7, 2100.0)]
-    a, c = observables(capas, LAM, np.deg2rad(3))
+    a, c = camino_optico_grupo(capas, LAM), confocal(capas, LAM, np.deg2rad(3))
     assert a.shape == (3,) and c.shape == (3,)
     assert np.allclose(a, [float(m.material.n_grupo(LAM)) * m.d for m in capas])
     assert np.all(a > c)

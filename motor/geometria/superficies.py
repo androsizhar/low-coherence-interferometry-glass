@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Tuple
-
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
 from scipy.optimize import minimize
@@ -34,13 +32,12 @@ def puntos_interfaces(q: np.ndarray, n_in: np.ndarray, d: np.ndarray) -> np.ndar
     return q[None, :, :] + D.T[:, :, None] * n_in[None, :, :]
 
 
-def desviacion_contra_cad(P: np.ndarray, malla_k: Malla) -> Tuple[np.ndarray, np.ndarray]:
+def desviacion_contra_cad(P: np.ndarray, malla_k: Malla) -> tuple[np.ndarray, np.ndarray]:
     Q, dist, _ = malla_k.proyectar(P)
     return dist, Q
 
 
 class ProcesoGaussiano2D:
-
     def __init__(self, ajustar_nugget: bool = True):
         self.ajustar_nugget = ajustar_nugget
         self.ell = self.s = self.nug = None
@@ -76,7 +73,7 @@ class ProcesoGaussiano2D:
         quad = float(r @ cho_solve(cf, r))
         return 0.5 * (quad + logdetK + logdetA)
 
-    def ajustar(self, X: np.ndarray, y: np.ndarray, sigma: np.ndarray) -> "ProcesoGaussiano2D":
+    def ajustar(self, X: np.ndarray, y: np.ndarray, sigma: np.ndarray) -> ProcesoGaussiano2D:
         X, y, sigma = np.asarray(X, float), np.asarray(y, float), np.asarray(sigma, float)
         if X.ndim != 2 or X.shape[1] != 2 or y.shape != (len(X),) or sigma.shape != y.shape:
             raise ErrorDeEntrada("GP: X (N,2), y (N,), sigma (N,)")

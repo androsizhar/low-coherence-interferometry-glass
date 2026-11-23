@@ -7,8 +7,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from main import main
 from motor.analisis.gemelo import ParametrosHUD, imagen_doble_receta
-from motor.analisis.recetas import evaluar_config, main
+from motor.analisis.recetas import evaluar_config
 from motor.medicion.lectura import ErrorDeEntrada
 from motor.medicion.materiales import BK7, PVB_SUPUESTO
 from motor.medicion.modelo_directo import Capa
@@ -139,7 +140,7 @@ def test_cli_escribe_json_estricto_y_ejemplo_funciona(tmp_path):
     cfg = tmp_path / "recetas.json"
     cfg.write_text(json.dumps(_config()))
     salida = tmp_path / "salida" / "informe.json"
-    assert main(["--config", str(cfg), "--salida", str(salida)]) == 0
+    assert main(["receta", str(cfg), "--salida", str(salida)]) == 0
     texto = salida.read_text()
     assert "Infinity" not in texto and "NaN" not in texto
     assert json.loads(texto)["base"]["sensibilidad_sin_prior_indice"]["sigma"] == [None] * 6
@@ -147,9 +148,8 @@ def test_cli_escribe_json_estricto_y_ejemplo_funciona(tmp_path):
     proceso = subprocess.run(
         [
             sys.executable,
-            "-m",
-            "motor.analisis.recetas",
-            "--config",
+            "main.py",
+            "receta",
             str(raiz / "ejemplos" / "recetas.json"),
             "--salida",
             str(tmp_path / "ejemplo.json"),
@@ -166,5 +166,5 @@ def test_json_nan_de_entrada_y_error_cli_no_crean_informe(tmp_path):
     cfg = tmp_path / "mal.json"
     cfg.write_text('{"lam0": NaN}')
     salida = tmp_path / "informe.json"
-    assert main(["--config", str(cfg), "--salida", str(salida)]) == 2
+    assert main(["receta", str(cfg), "--salida", str(salida)]) == 2
     assert not salida.exists()

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import json
 import tempfile
 from html import escape
@@ -390,19 +389,3 @@ def generar_pdf(informe, mapas, destino, inicio_corte=None, fin_corte=None, exag
         )
         documento.build(historia, onFirstPage=pie, onLaterPages=pie)
     return destino
-
-
-def main(argv=None):
-    parser = argparse.ArgumentParser(
-        description="Genera un informe PDF local sin abrir la interfaz"
-    )
-    parser.add_argument("informe", help="informe.json")
-    parser.add_argument("mapas", help="mapas.npz")
-    parser.add_argument("destino", help="archivo PDF de salida")
-    opciones = parser.parse_args(argv)
-    generar_pdf(opciones.informe, opciones.mapas, opciones.destino)
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

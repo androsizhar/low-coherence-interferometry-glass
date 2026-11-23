@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
+from scipy.spatial.transform import Rotation
 
 from motor.analisis.pipeline import ConfigPipeline, ejecutar, evaluar_malla_en_xy
-from motor.geometria.cad import Malla, Transformacion, _rodrigues, malla_desde_grilla
+from motor.geometria.cad import Malla, Transformacion, malla_desde_grilla
 from motor.medicion.lectura import Instrumento, Medicion
 from motor.medicion.picos import ResultadoPicos
 from motor.metrologia.calibracion import Calibracion
@@ -15,7 +16,7 @@ def _caso_geometrico(
     transformacion=None,
     inclinar=False,
     desplazamiento_z=0.0,
-    soporte_triangular=False
+    soporte_triangular=False,
 ):
     ng = np.array([1.5, 1.48, 1.5])
     cfg = ConfigPipeline(
@@ -98,7 +99,10 @@ def test_interfaces_exportadas_conservan_espesor_reconstruido(monkeypatch):
 
 
 def test_covarianza_marco_cad_incremento_izquierdo_no_se_promedia(monkeypatch):
-    T = Transformacion(_rodrigues(np.array([0.1, -0.05, 0.08])), np.array([100.0, -200.0, 300.0]))
+    T = Transformacion(
+        Rotation.from_rotvec(np.array([0.1, -0.05, 0.08])).as_matrix(),
+        np.array([100.0, -200.0, 300.0]),
+    )
     direccion = np.array([1e-4, -2e-4, 0.0, 1.0, 2.0, 3.0])
     C = np.outer(direccion, direccion)
     C[5, 5] += 16.0

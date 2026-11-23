@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 from scipy.optimize import brentq
@@ -16,8 +15,8 @@ class EspesorCapas:
     d: np.ndarray
     sigma_aleatoria: np.ndarray
     sigma_sistematica: np.ndarray
-    cov_aleatoria: Optional[np.ndarray] = None
-    cov_sistematica: Optional[np.ndarray] = None
+    cov_aleatoria: np.ndarray | None = None
+    cov_sistematica: np.ndarray | None = None
 
     @property
     def sigma_total(self) -> np.ndarray:
@@ -25,7 +24,7 @@ class EspesorCapas:
 
 
 def espesor_calibrado(
-    a: np.ndarray, sigma_a: np.ndarray, cal: Calibracion, cov_a: Optional[np.ndarray] = None
+    a: np.ndarray, sigma_a: np.ndarray, cal: Calibracion, cov_a: np.ndarray | None = None
 ) -> EspesorCapas:
     a, sigma_a = np.asarray(a, float), np.asarray(sigma_a, float)
     if a.ndim < 1 or a.shape[-1] != cal.ng.size or sigma_a.shape != a.shape:
@@ -42,7 +41,7 @@ def espesor_calibrado(
         Ca = corr * sigma_a[..., :, None] * sigma_a[..., None, :]
     else:
         Ca = np.asarray(cov_a, float)
-        if Ca.shape != a.shape[:-1] + (n, n):
+        if Ca.shape != (*a.shape[:-1], n, n):
             raise ErrorDeEntrada("cov_a debe tener forma (..., capas, capas)")
         for C in Ca.reshape((-1, n, n)):
             _covarianza(C, n, "cov_a")

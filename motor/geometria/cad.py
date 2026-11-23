@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import struct
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import List, Optional, Sequence
+from pathlib import Path
 
 import numpy as np
 from scipy.spatial import cKDTree
+from scipy.spatial.transform import Rotation
 
 from motor.medicion.lectura import ErrorDeEntrada
 
@@ -18,9 +19,10 @@ class Malla:
     def __post_init__(self):
         self.v = np.array(self.v, float, copy=True)
         caras = np.asarray(self.f)
-        if not np.issubdtype(caras.dtype, np.integer):
-            if not np.all(np.isfinite(caras)) or np.any(caras != np.floor(caras)):
-                raise ErrorDeEntrada("malla: los indices de cara deben ser enteros")
+        if not np.issubdtype(caras.dtype, np.integer) and (
+            not np.all(np.isfinite(caras)) or np.any(caras != np.floor(caras))
+        ):
+            raise ErrorDeEntrada("malla: los indices de cara deben ser enteros")
         self.f = np.array(caras, int, copy=True)
         if self.v.ndim != 2 or self.v.shape[1] != 3 or self.f.ndim != 2 or self.f.shape[1] != 3:
             raise ErrorDeEntrada("malla: v debe ser (V,3) y f (T,3)")
@@ -148,7 +150,7 @@ class Malla:
         signo[signo == 0] = 1.0
         return mejor_q, signo * mejor_d, mejor_t
 
-    def muestrear(self, n: int, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+    def muestrear(self, n: int, rng: np.random.Generator | None = None) -> np.ndarray:
         rng = rng or np.random.default_rng(0)
         A = self.areas()
         idx = rng.choice(len(A), size=n, p=A / A.sum())
@@ -209,7 +211,7 @@ def malla_desde_grilla(X: np.ndarray, Y: np.ndarray, Z: np.ndarray) -> Malla:
     return Malla(v, f)
 
 
-def interfaces_nominales(exterior: Malla, d_nom: Sequence[float]) -> List[Malla]:
+def interfaces_nominales(exterior: Malla, d_nom: Sequence[float]) -> list[Malla]:
     d_nom = np.asarray(d_nom, float)
     if (
         d_nom.ndim not in (1, 2)
@@ -251,6 +253,24 @@ class Transformacion:
     def aplicar(self, P):
         return np.asarray(P) @ self.R.T + self.t
 
+    def componer(self, otra: Transformacion) -> Transformacion:
+        """self ∘ otra: primero aplica `otra` y luego `self`."""
+        return Transformacion(self.R @ otra.R, self.R @ otra.t + self.t)
+
+    def transportar_covarianza(self, cov: np.ndarray | None) -> np.ndarray | None:
+        """Covarianza (rotación pequeña, traslación) de una pose expresada en el marco destino."""
+        if cov is None:
+            return None
+        cov = np.asarray(cov, float)
+        tx = np.array(
+            [[0, -self.t[2], self.t[1]], [self.t[2], 0, -self.t[0]], [-self.t[1], self.t[0], 0]]
+        )
+        A = np.zeros((6, 6))
+        A[:3, :3] = self.R
+        A[3:, :3] = tx @ self.R
+        A[3:, 3:] = self.R
+        return A @ cov @ A.T
+
 
 @dataclass
 class ResultadoRegistro:
@@ -259,30 +279,21 @@ class ResultadoRegistro:
     iteraciones: int
     convergio: bool
     cond: float
-    banderas: List[str] = field(default_factory=list)
-    covarianza: Optional[np.ndarray] = None
-
-
-def _rodrigues(w: np.ndarray) -> np.ndarray:
-    th = np.linalg.norm(w)
-    if th < 1e-15:
-        return np.eye(3)
-    k = w / th
-    K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
-    return np.eye(3) + np.sin(th) * K + (1 - np.cos(th)) * K @ K
+    banderas: list[str] = field(default_factory=list)
+    covarianza: np.ndarray | None = None
 
 
 def registrar_icp(
     puntos: np.ndarray,
     malla: Malla,
-    T0: Optional[Transformacion] = None,
+    T0: Transformacion | None = None,
     max_iter: int = 60,
     recorte: float = 0.9,
     amortiguamiento: float = 1e-9,
     tol: float = 1e-9,
     cond_max: float = 1e8,
-    sigma_prior_traslacion: Optional[float] = None,
-    sigma_prior_rotacion: Optional[float] = None,
+    sigma_prior_traslacion: float | None = None,
+    sigma_prior_rotacion: float | None = None,
     sigma_ruido: float = 2.0,
 ) -> ResultadoRegistro:
     P = np.asarray(puntos, float)
@@ -319,12 +330,11 @@ def registrar_icp(
     st = sigma_prior_traslacion if sigma_prior_traslacion is not None else np.inf
     sr = (sigma_prior_rotacion if sigma_prior_rotacion is not None else np.inf) * Lc
     Pinv = np.diag([1.0 / sr**2] * 3 + [1.0 / st**2] * 3)
-    banderas: List[str] = []
+    banderas: list[str] = []
     convergio = False
     cond = np.inf
     it = 0
     keep_fijo = None
-    from scipy.spatial.transform import Rotation
 
     for it in range(1, max_iter + 1):
         X = T.aplicar(P)
@@ -350,7 +360,7 @@ def registrar_icp(
         else:
             x = np.linalg.solve(N + amortiguamiento * ev[-1] * np.eye(6), -A.T @ rk)
         w, dt = x[:3] / Lc, x[3:]
-        dR = _rodrigues(w)
+        dR = Rotation.from_rotvec(w).as_matrix()
         T = Transformacion(dR @ T.R, dR @ T.t + dt)
         if np.linalg.norm(x) < (
             max(tol * max(Lc, 1.0) * 1e3, 0.05) if con_prior else tol * max(Lc, 1.0)
@@ -396,30 +406,30 @@ def escribir_stl(ruta: str, malla: Malla, nombre: str = "vitro", ascii_: bool = 
             cuantizados = malla.v.astype(np.float32).astype(float)
         Malla(cuantizados, malla.f)
     nf = malla.normales_cara()
-    a, b, c = malla.tri()
+    v = np.stack(malla.tri(), axis=1)
     if ascii_:
-        with open(ruta, "w", encoding="utf-8") as fh:
-            fh.write(f"solid {nombre}\n")
-            for i in range(len(malla.f)):
-                fh.write(
-                    f"  facet normal {nf[i,0]:.9e} {nf[i,1]:.9e} {nf[i,2]:.9e}\n    outer loop\n"
-                )
-                for p in (a[i], b[i], c[i]):
-                    fh.write(f"      vertex {p[0]:.9e} {p[1]:.9e} {p[2]:.9e}\n")
-                fh.write("    endloop\n  endfacet\n")
-            fh.write(f"endsolid {nombre}\n")
+        vertice = "      vertex {:.9e} {:.9e} {:.9e}\n"
+        facetas = (
+            f"  facet normal {n[0]:.9e} {n[1]:.9e} {n[2]:.9e}\n    outer loop\n"
+            + "".join(vertice.format(*p) for p in tri)
+            + "    endloop\n  endfacet\n"
+            for n, tri in zip(nf, v)
+        )
+        texto = f"solid {nombre}\n" + "".join(facetas) + f"endsolid {nombre}\n"
+        Path(ruta).write_text(texto, encoding="utf-8")
         return
-    with open(ruta, "wb") as fh:
-        fh.write(nombre.encode("ascii", "ignore")[:80].ljust(80, b" "))
-        fh.write(struct.pack("<I", len(malla.f)))
-        for i in range(len(malla.f)):
-            fh.write(struct.pack("<12fH", *nf[i], *a[i], *b[i], *c[i], 0))
+    registros = np.zeros(len(malla.f), dtype=_REGISTRO_STL)
+    registros["n"], registros["v"] = nf, v
+    cabecera = nombre.encode("ascii", "ignore")[:80].ljust(80, b" ")
+    Path(ruta).write_bytes(cabecera + np.uint32(len(registros)).tobytes() + registros.tobytes())
+
+
+_REGISTRO_STL = np.dtype([("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")])
 
 
 def leer_stl(ruta: str) -> Malla:
-    with open(ruta, "rb") as fh:
-        datos = fh.read()
-    n = struct.unpack("<I", datos[80:84])[0] if len(datos) >= 84 else None
+    datos = Path(ruta).read_bytes()
+    n = int.from_bytes(datos[80:84], "little") if len(datos) >= 84 else None
     es_binario = n is not None and len(datos) == 84 + 50 * n
     if not es_binario and datos.lstrip().startswith(b"solid"):
         verts = []
@@ -438,9 +448,7 @@ def leer_stl(ruta: str) -> Malla:
         return _soldar(V.reshape(-1, 3, 3))
     if not es_binario:
         raise ErrorDeEntrada("STL binario corrupto (tamano no coincide)")
-    arr = np.frombuffer(
-        datos[84:], dtype=np.dtype([("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")]), count=n
-    )
+    arr = np.frombuffer(datos[84:], dtype=_REGISTRO_STL, count=n)
     return _soldar(arr["v"].astype(float))
 
 

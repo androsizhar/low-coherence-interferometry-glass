@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import argparse
 import json
-import sys
 from pathlib import Path
-from typing import Optional, Sequence
 
 import numpy as np
 
@@ -17,10 +14,9 @@ from motor.analisis.gemelo import (
     sensibilidad,
 )
 from motor.medicion.lectura import ErrorDeEntrada
-from motor.medicion.materiales import BK7, PVB_SUPUESTO, SODOCALCICO_SUPUESTO, Cauchy
+from motor.medicion.materiales import CATALOGO, Cauchy
 from motor.medicion.modelo_directo import Capa, camino_optico_grupo
 
-CATALOGO = {"BK7": BK7, "PVB_SUPUESTO": PVB_SUPUESTO, "SODOCALCICO_SUPUESTO": SODOCALCICO_SUPUESTO}
 UMBRAL = 3.0
 
 
@@ -125,7 +121,7 @@ def _analizar(capas, cfg, cov_diferencia, hud, w):
         "caminos_opticos_grupo_um": camino_optico_grupo(capas, cfg.lam0),
         "sensibilidad_indices_exactos": {
             "hipotesis": "n_g conocido exactamente; error del material/modelo excluido",
-            "parametros": [f"d{j+1}" for j in range(len(capas))],
+            "parametros": [f"d{j + 1}" for j in range(len(capas))],
             "sigma_um": sigma_d,
             "cambio_minimo_local_um": UMBRAL * sigma_d,
             "covarianza_espesor_um2": Cd,
@@ -277,8 +273,8 @@ def ejecutar_config(ruta_config, salida):
         raise ErrorDeEntrada(f"JSON no estandar: {valor}")
 
     try:
-        with open(ruta_config, encoding="utf-8") as f:
-            config = json.load(f, parse_constant=rechazar_constante)
+        texto = Path(ruta_config).read_text(encoding="utf-8")
+        config = json.loads(texto, parse_constant=rechazar_constante)
         informe = evaluar_config(config)
     except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
         if isinstance(exc, ErrorDeEntrada):
@@ -286,25 +282,6 @@ def ejecutar_config(ruta_config, salida):
         raise ErrorDeEntrada(f"configuracion de recetas invalida: {exc}") from exc
     destino = Path(salida)
     destino.parent.mkdir(parents=True, exist_ok=True)
-    with destino.open("w", encoding="utf-8") as f:
-        json.dump(informe, f, ensure_ascii=False, indent=2, allow_nan=False)
-        f.write("\n")
+    texto = json.dumps(informe, ensure_ascii=False, indent=2, allow_nan=False)
+    destino.write_text(texto + "\n", encoding="utf-8")
     return informe
-
-
-def main(argv: Optional[Sequence[str]] = None):
-    p = argparse.ArgumentParser(description="Explorar recetas de vidrio laminado sin fabricar")
-    p.add_argument("--config", required=True, help="JSON de materiales, espesores y ruido real")
-    p.add_argument("--salida", default="informe_recetas.json", help="informe JSON")
-    args = p.parse_args(argv)
-    try:
-        ejecutar_config(args.config, args.salida)
-    except (ErrorDeEntrada, OSError) as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
-        return 2
-    print(f"Informe exploratorio escrito en: {Path(args.salida).resolve()}")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

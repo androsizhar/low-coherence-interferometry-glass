@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
+from scipy.spatial.transform import Rotation
 
 from motor.geometria.cad import (
     Malla,
-    _rodrigues,
     escribir_stl,
     interfaces_nominales,
     leer_stl,
@@ -113,7 +113,7 @@ def test_icp_recupera_transformacion_conocida():
     P_cad = m.muestrear(600, rng)
     w_true = np.array([2e-3, -1.5e-3, 1e-3])
     t_true = np.array([30.0, -20.0, 80.0])
-    Rt = _rodrigues(w_true)
+    Rt = Rotation.from_rotvec(w_true).as_matrix()
     P = (P_cad - t_true) @ Rt + rng.normal(0, 1.0, P_cad.shape)
     r = registrar_icp(P, m)
     assert r.convergio and r.rms < 3.0
@@ -158,7 +158,7 @@ def test_icp_con_prior_de_montaje_evita_la_deriva_tangencial():
     P_cad = m.muestrear(500, rng)
     w_true = np.array([0.5e-3, -0.4e-3, 0.6e-3])
     t_true = np.array([40.0, -25.0, 120.0])
-    Rt = _rodrigues(w_true)
+    Rt = Rotation.from_rotvec(w_true).as_matrix()
     P = (P_cad - t_true) @ Rt + rng.normal(0, 1.0, P_cad.shape)
     r = registrar_icp(P, m, sigma_prior_traslacion=150.0, sigma_prior_rotacion=1e-3)
     assert r.convergio, r.banderas

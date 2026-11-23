@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Tuple
 
 import numpy as np
 
@@ -20,7 +19,6 @@ def _indice_valido(n):
 
 
 class Material:
-
     nombre: str = "material"
 
     def n(self, lam):
@@ -35,7 +33,6 @@ class Material:
 
 @dataclass(frozen=True)
 class Cauchy(Material):
-
     A: float
     B: float = 0.0
     C: float = 0.0
@@ -56,9 +53,8 @@ class Cauchy(Material):
 
 @dataclass(frozen=True)
 class Sellmeier(Material):
-
-    Bs: Tuple[float, ...]
-    Cs: Tuple[float, ...]
+    Bs: tuple[float, ...]
+    Cs: tuple[float, ...]
     nombre: str = "sellmeier"
 
     def __post_init__(self):
@@ -90,7 +86,6 @@ class Sellmeier(Material):
 
 @dataclass(frozen=True)
 class Desplazado(Material):
-
     base: Material
     dn: float
     nombre: str = "desplazado"
@@ -113,3 +108,4 @@ BK7 = Sellmeier(
 )
 PVB_SUPUESTO = Cauchy(A=1.4703, B=0.0051, nombre="PVB_supuesto")
 SODOCALCICO_SUPUESTO = Cauchy(A=1.5111, B=0.00425, nombre="sodocalcico_supuesto")
+CATALOGO = {"BK7": BK7, "PVB_SUPUESTO": PVB_SUPUESTO, "SODOCALCICO_SUPUESTO": SODOCALCICO_SUPUESTO}

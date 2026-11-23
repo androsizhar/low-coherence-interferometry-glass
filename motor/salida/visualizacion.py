@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import textwrap
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Mapping
 
 import numpy as np
 
@@ -185,7 +185,7 @@ def _interpolar_en_rejilla(datos, campos, xy):
     ty = (xy[:, 1] - ys[iy]) / (ys[iy + 1] - ys[iy])
     dentro = (xy[:, 0] >= xs[0]) & (xy[:, 0] <= xs[-1]) & (xy[:, 1] >= ys[0]) & (xy[:, 1] <= ys[-1])
     valido = dentro.copy()
-    resultado = np.zeros((len(xy),) + campos.shape[:-2])
+    resultado = np.zeros((len(xy), *campos.shape[:-2]))
     for dx, dy, peso in (
         (0, 0, (1 - tx) * (1 - ty)),
         (1, 0, tx * (1 - ty)),
@@ -266,7 +266,7 @@ def figura_corte(informe, mapas, inicio=None, fin=None, n=200, exageracion=None)
     nombres = list(informe.get("espesor", {}))
     umbral = informe.get("regla_calidad", {}).get("umbral_P_fuera", 0.05)
     for j in range(limites.shape[1] - 1):
-        nombre = nombres[j] if j < len(nombres) else f"capa {j+1}"
+        nombre = nombres[j] if j < len(nombres) else f"capa {j + 1}"
         ax.fill_between(
             x,
             limites[:, j],
@@ -383,7 +383,7 @@ def geometria_vista_3d(mapas, exageracion=1, explotada=False):
 
 
 def _triangulos_mask(mask):
-    ny, nx = mask.shape
+    _ny, nx = mask.shape
     celdas = mask[:-1, :-1] & mask[1:, :-1] & mask[:-1, 1:] & mask[1:, 1:]
     iy, ix = np.nonzero(celdas)
     a = iy * nx + ix

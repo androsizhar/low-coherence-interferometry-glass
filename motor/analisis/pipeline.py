@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import argparse
+import hashlib
 import json
-import os
-import sys
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Sequence, Tuple
+from pathlib import Path
 
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
@@ -66,32 +65,34 @@ class ConfigPipeline:
     d_nom: np.ndarray
     tol_d: np.ndarray
     ng_prior: np.ndarray
-    grupos: List[str]
-    nombres_capas: List[str] = field(default_factory=lambda: ["vidrio_ext", "pvb", "vidrio_int"])
+    grupos: list[str]
+    nombres_capas: list[str] = field(default_factory=lambda: ["vidrio_ext", "pvb", "vidrio_int"])
     idx_pvb: int = 1
     w_nom: float = 0.0
     tol_w: float = 0.1
     sigma_pos: float = 3.0
-    rango_frontal: Tuple[float, float] = (19000.0, 21000.0)
+    rango_frontal: tuple[float, float] = (19000.0, 21000.0)
     umbral_falla: float = 0.05
-    grilla: Tuple[int, int] = (31, 31)
-    materiales_apriori: Optional[Sequence[Material]] = None
-    hud: Optional[ParametrosHUD] = None
-    prior_montaje: Optional[Tuple[float, float]] = None
+    grilla: tuple[int, int] = (31, 31)
+    materiales_apriori: Sequence[Material] | None = None
+    hud: ParametrosHUD | None = None
+    prior_montaje: tuple[float, float] | None = None
     modo_registro: str = "fijo"
-    transformacion: Optional[Transformacion] = None
-    cov_transformacion: Optional[np.ndarray] = None
-    direccion_cuna: Tuple[float, float] = (1.0, 0.0)
-    gradiente_nominal: Optional[np.ndarray] = None
-    origen_nominal_xy: Tuple[float, float] = (0.0, 0.0)
-    tol_delta: Optional[np.ndarray] = None
+    transformacion: Transformacion | None = None
+    cov_transformacion: np.ndarray | None = None
+    direccion_cuna: tuple[float, float] = (1.0, 0.0)
+    gradiente_nominal: np.ndarray | None = None
+    origen_nominal_xy: tuple[float, float] = (0.0, 0.0)
+    tol_delta: np.ndarray | None = None
     origen_datos: str = "no_declarado"
-    mascara_adquisicion: Optional[dict] = None
-    zonas_tolerancia: List[dict] = field(default_factory=list)
+    mascara_adquisicion: dict | None = None
+    zonas_tolerancia: list[dict] = field(default_factory=list)
     presupuesto_declarado: dict = field(default_factory=dict)
     pose_exacta_declarada: bool = False
     fuente_registro: str = "no_documentada"
-    rangos_ng_esperados: Optional[np.ndarray] = None
+    rangos_ng_esperados: np.ndarray | None = None
+    nominal_mapa: dict | None = None
+    w_nom_cad: bool = False
 
     def __post_init__(self):
         self.d_nom = np.asarray(self.d_nom, float)
@@ -158,8 +159,9 @@ class ConfigPipeline:
         ):
             raise ErrorDeEntrada("prior_montaje debe tener dos desviaciones positivas finitas")
         if self.transformacion is not None:
-            R, t = np.asarray(self.transformacion.R, float), np.asarray(
-                self.transformacion.t, float
+            R, t = (
+                np.asarray(self.transformacion.R, float),
+                np.asarray(self.transformacion.t, float),
             )
             if (
                 R.shape != (3, 3)
@@ -232,15 +234,105 @@ class ConfigPipeline:
                     "ng_rangos_esperados debe ser (N,2), finito creciente >1 por capa"
                 )
             self.rangos_ng_esperados = rangos
+        self._preparar_nominal_mapa(n)
         self.instrumento.validar()
+
+    def _preparar_nominal_mapa(self, n):
+        self._interp_nom = self._interp_w = None
+        if self.nominal_mapa is None:
+            if self.w_nom_cad:
+                raise ErrorDeEntrada("cuna.w_nom='cad' requiere capas.d_nom_mapa")
+            return
+        from scipy.interpolate import RegularGridInterpolator
+        from scipy.ndimage import distance_transform_edt
+
+        try:
+            X = np.asarray(self.nominal_mapa["X"], float)
+            Y = np.asarray(self.nominal_mapa["Y"], float)
+            D = np.asarray(self.nominal_mapa["d_nom"], float)
+        except KeyError as e:
+            raise ErrorDeEntrada(f"d_nom_mapa: falta la clave {e}") from e
+        if X.ndim != 2 or X.shape != Y.shape or D.shape != (n, *X.shape) or min(X.shape) < 2:
+            raise ErrorDeEntrada("d_nom_mapa: X,Y (ny,nx) y d_nom (capas,ny,nx)")
+        xs, ys = X[0], Y[:, 0]
+        if (
+            not np.all(np.isfinite(xs))
+            or not np.all(np.isfinite(ys))
+            or np.any(np.diff(xs) <= 0)
+            or np.any(np.diff(ys) <= 0)
+            or not np.allclose(X, xs[None, :])
+            or not np.allclose(Y, ys[:, None])
+        ):
+            raise ErrorDeEntrada("d_nom_mapa: X,Y deben formar una rejilla regular creciente en µm")
+        if np.any(self.gradiente_nominal != 0):
+            raise ErrorDeEntrada("usa d_nom_mapa o gradiente_nominal, no ambos")
+        valido = np.all(np.isfinite(D), axis=0) & np.all(np.where(np.isfinite(D), D, 1) > 0, axis=0)
+        if valido.sum() < 4:
+            raise ErrorDeEntrada("d_nom_mapa: menos de 4 nodos con espesores finitos y positivos")
+        _, (iy, ix) = distance_transform_edt(~valido, return_indices=True)
+        Dl = D[:, iy, ix]
+        self._interp_nom = RegularGridInterpolator(
+            (ys, xs), np.moveaxis(Dl, 0, -1), bounds_error=False, fill_value=None
+        )
+        gy, gx = np.gradient(Dl[self.idx_pvb], ys, xs)
+        self._grad_nom_cuna = (gx, gy, valido)
+        if self.w_nom_cad:
+            s = np.asarray(self.direccion_cuna, float)
+            W = (gx * s[0] + gy * s[1]) * UM
+            self._interp_w = RegularGridInterpolator(
+                (ys, xs), W, bounds_error=False, fill_value=None
+            )
+            self.w_nom = float(np.mean(W[valido]))
+
+    @property
+    def nominal_variable(self) -> bool:
+        return self.nominal_mapa is not None or bool(np.any(self.gradiente_nominal != 0))
+
+    def direccion_cuna_desde_cad(self):
+        if self.nominal_mapa is None:
+            raise ErrorDeEntrada("direccion_cuna='cad' requiere capas.d_nom_mapa")
+        gx, gy, valido = self._grad_nom_cuna
+        g = np.array([gx[valido].mean(), gy[valido].mean()])
+        if not np.all(np.isfinite(g)) or np.linalg.norm(g) < 1e-9:
+            raise ErrorDeEntrada(
+                "la capa de cuña no tiene gradiente nominal: declara direccion_cuna"
+            )
+        return tuple(g / np.linalg.norm(g))
+
+    def w_nom_en_xy(self, xy):
+        xy = np.asarray(xy, float)
+        if self._interp_w is None:
+            return np.full(xy.shape[:-1], float(self.w_nom))
+        return self._interp_w(xy.reshape(-1, 2)[:, ::-1]).reshape(xy.shape[:-1])
+
+    def descripcion_nominal(self) -> dict[str, object]:
+        if self.nominal_mapa is not None:
+            return {
+                "tipo": "mapa_por_nodo_desde_cad",
+                "cuna_nominal": "mapa_desde_cad" if self.w_nom_cad else "constante",
+                "fuente": self.nominal_mapa.get("fuente"),
+            }
+        return {
+            "tipo": "constante_mas_gradiente_lineal",
+            "cuna_nominal": "constante",
+        }
 
     def nominal_en_xy(self, xy):
         xy = np.asarray(xy, float)
+        if getattr(self, "_interp_nom", None) is not None:
+            plano = xy.reshape(-1, 2)[:, ::-1]
+            return self._interp_nom(plano).reshape((*xy.shape[:-1], self.d_nom.size))
         return self.d_nom + ((xy - self.origen_nominal_xy) / UM) @ self.gradiente_nominal.T
 
 
 def picos_punto(
-    k: np.ndarray, I: np.ndarray, cfg: ConfigPipeline, d_esperado=None
+    k: np.ndarray,
+    I: np.ndarray,
+    cfg: ConfigPipeline,
+    d_esperado=None,
+    *,
+    posicion=None,
+    normal=None,
 ) -> ResultadoPicos:
     if cfg.instrumento.limites_saturacion is not None:
         lo, hi = cfg.instrumento.limites_saturacion
@@ -252,6 +344,18 @@ def picos_punto(
     smin, smax = cfg.rango_frontal
     r0 = detectar_picos(k, I, 1, ventanas=[(2 * (off + smin), 2 * (off + smax))])
     L0 = r0.L[0]
+    if (
+        d_esperado is None
+        and posicion is not None
+        and normal is not None
+        and cfg.nominal_variable
+        and not r0.banderas
+    ):
+        q = np.asarray(posicion, float) + np.asarray(normal, float) * (L0 / 2.0 - off)
+        T = cfg.transformacion or Transformacion(np.eye(3), np.zeros(3))
+        local = np.asarray(cfg.nominal_en_xy(T.aplicar(q)[:2]), float)
+        if local.shape == cfg.d_nom.shape and np.all(np.isfinite(local)) and np.all(local > 0):
+            d_esperado = local
     esperado = cfg.d_nom if d_esperado is None else np.asarray(d_esperado, float)
     if (
         esperado.shape != cfg.d_nom.shape
@@ -299,14 +403,13 @@ def evaluar_malla_en_xy(malla: Malla, X: np.ndarray, Y: np.ndarray):
 @dataclass
 class Resultado:
     ids_ok: np.ndarray
-    ids_defecto: Dict[int, List[str]]
-    banderas: List[str]
+    ids_defecto: dict[int, list[str]]
+    banderas: list[str]
     registro: object
     d_puntos: np.ndarray
     sigma_aleatoria: np.ndarray
     sigma_sistematica: np.ndarray
     delta_puntos: np.ndarray
-    q_registrado: np.ndarray
     Xg: np.ndarray
     Yg: np.ndarray
     d_media: np.ndarray
@@ -320,23 +423,23 @@ class Resultado:
     P_fuera_w: np.ndarray
     falla_d: np.ndarray
     falla_w: np.ndarray
-    interfaces: List[np.ndarray]
-    resumen_gemelo: Dict[str, object]
-    gps_d: List[ProcesoGaussiano2D]
-    gps_delta: List[ProcesoGaussiano2D]
+    interfaces: list[np.ndarray]
+    resumen_gemelo: dict[str, object]
+    gps_d: list[ProcesoGaussiano2D]
+    gps_delta: list[ProcesoGaussiano2D]
     mascara_soporte: np.ndarray
     d_std_aleatoria: np.ndarray
     delta_std_aleatoria: np.ndarray
-    P_fuera_delta: Optional[np.ndarray]
+    P_fuera_delta: np.ndarray | None
     delta_diferencia_gp: np.ndarray
-    estado_validacion: Dict[str, object] = field(default_factory=dict)
-    incidencia: Dict[str, object] = field(default_factory=dict)
-    presupuesto_incertidumbre: List[dict] = field(default_factory=list)
-    tol_d_mapa: Optional[np.ndarray] = None
-    tol_w_mapa: Optional[np.ndarray] = None
-    tol_delta_mapa: Optional[np.ndarray] = None
-    interfaces_nominales: Optional[np.ndarray] = None
-    mascara_puntos: Optional[np.ndarray] = None
+    estado_validacion: dict[str, object] = field(default_factory=dict)
+    incidencia: dict[str, object] = field(default_factory=dict)
+    presupuesto_incertidumbre: list[dict] = field(default_factory=list)
+    tol_d_mapa: np.ndarray | None = None
+    tol_w_mapa: np.ndarray | None = None
+    tol_delta_mapa: np.ndarray | None = None
+    interfaces_nominales: np.ndarray | None = None
+    mascara_puntos: np.ndarray | None = None
 
 
 def ejecutar(
@@ -350,7 +453,7 @@ def ejecutar(
 ) -> Resultado:
     notificar(progreso, cancelar, 0.05, "Validando mediciones y calibración")
     N = cfg.d_nom.size
-    banderas: List[str] = []
+    banderas: list[str] = []
     if not cal.ok:
         raise ErrorDeEntrada("calibracion inconsistente: " + ",".join(cal.banderas))
     if len(cal.ng) != N or list(cal.grupos) != list(cfg.grupos):
@@ -366,13 +469,16 @@ def ejecutar(
         )
     if len({m.id for m in mediciones}) != len(mediciones):
         raise ErrorDeEntrada("los id de medicion deben ser unicos")
-    res: List[ResultadoPicos] = []
+    res: list[ResultadoPicos] = []
     for i, m in enumerate(mediciones):
         notificar(
             progreso, cancelar, 0.05 + 0.25 * i / max(len(mediciones), 1), "Localizando interfaces"
         )
         m.validar()
-        res.append(picos_punto(m.k, m.I, cfg))
+        if cfg.nominal_variable:
+            res.append(picos_punto(m.k, m.I, cfg, posicion=m.posicion, normal=m.normal))
+        else:
+            res.append(picos_punto(m.k, m.I, cfg))
     ok = np.array([r.ok for r in res])
     ids_def = {int(m.id): r.banderas for m, r in zip(mediciones, res) if not r.ok}
     if ok.sum() < 20:
@@ -588,7 +694,7 @@ def ejecutar(
     nominal_grilla = cfg.nominal_en_xy(np.stack([Xg, Yg], axis=-1))
     for j in range(N):
         Pd[j] = probabilidad_con_mapa(d_media[j], d_std[j], nominal_grilla[..., j], td[j])
-    Pw = probabilidad_con_mapa(w_mapa, sw_mapa, cfg.w_nom, tw)
+    Pw = probabilidad_con_mapa(w_mapa, sw_mapa, cfg.w_nom_en_xy(np.stack([Xg, Yg], axis=-1)), tw)
     Pdelta = (
         None
         if (cfg.tol_delta is None or cfg.modo_registro != "fijo" or cfg.cov_transformacion is None)
@@ -611,7 +717,6 @@ def ejecutar(
         sigma_aleatoria=esp.sigma_aleatoria,
         sigma_sistematica=esp.sigma_sistematica,
         delta_puntos=delta,
-        q_registrado=qr,
         Xg=Xg,
         Yg=Yg,
         d_media=d_media,
@@ -646,8 +751,8 @@ def ejecutar(
 
 def _resumen_gemelo(
     cfg: ConfigPipeline, cal: Calibracion, d: np.ndarray, w_mapa: np.ndarray
-) -> Dict[str, object]:
-    out: Dict[str, object] = {}
+) -> dict[str, object]:
+    out: dict[str, object] = {}
     out["espesor_medio_um"] = [float(x) for x in d.mean(axis=0)]
     out["cuna_media_mrad"] = float(np.mean(w_mapa))
     out["cuna_min_max_mrad"] = [float(w_mapa.min()), float(w_mapa.max())]
@@ -734,8 +839,8 @@ def _escribir_informe(informe, carpeta):
         "dependencias_nucleo": versiones,
     }
     informe = aplicar_estado(informe)
-    with open(os.path.join(carpeta, "informe.json"), "w", encoding="utf-8") as fh:
-        json.dump(informe, fh, indent=2, ensure_ascii=False, allow_nan=False)
+    texto = json.dumps(informe, indent=2, ensure_ascii=False, allow_nan=False)
+    (Path(carpeta) / "informe.json").write_text(texto, encoding="utf-8")
     return informe
 
 
@@ -770,11 +875,12 @@ def _resumen_validacion(val):
 
 def guardar(
     res: Resultado, cfg: ConfigPipeline, cal: Calibracion, carpeta: str
-) -> Dict[str, object]:
-    os.makedirs(carpeta, exist_ok=True)
+) -> dict[str, object]:
+    carpeta = Path(carpeta)
+    carpeta.mkdir(parents=True, exist_ok=True)
     N = cfg.d_nom.size
     rep = exportar_stl(
-        os.path.join(carpeta, "cad"), res.interfaces, cfg.nombres_capas, mascara=res.mascara_soporte
+        carpeta / "cad", res.interfaces, cfg.nombres_capas, mascara=res.mascara_soporte
     )
 
     def soportado(a, vector=False):
@@ -787,7 +893,7 @@ def guardar(
 
     mp = np.ones(len(res.ids_ok), bool) if res.mascara_puntos is None else res.mascara_puntos
     np.savez(
-        os.path.join(carpeta, "mapas.npz"),
+        carpeta / "mapas.npz",
         X=res.Xg,
         Y=res.Yg,
         d_media=soportado(res.d_media),
@@ -856,7 +962,7 @@ def guardar(
             ],
         },
         "puntos_validos": int(mp.sum()),
-        "puntos_validos_espectrales": int(len(res.ids_ok)),
+        "puntos_validos_espectrales": len(res.ids_ok),
         "puntos_con_defecto": {str(k): v for k, v in res.ids_defecto.items()},
         "banderas": res.banderas,
         "calibracion": {
@@ -907,6 +1013,8 @@ def guardar(
             "max": float(res.w_mapa[mask].max()),
             "sigma_media": float(res.sigma_w_mapa[mask].mean()),
             "direccion": cfg.direccion_cuna,
+            "nominal_media": float(cfg.w_nom),
+            "nominal_origen": "mapa_desde_cad" if cfg.w_nom_cad else "constante",
             "fraccion_zona_fuera_de_tolerancia": float(res.falla_w[mask].mean()),
         },
         "desviacion_vs_cad_um": {
@@ -923,6 +1031,7 @@ def guardar(
             for k in range(N + 1)
         },
         "gemelo": res.resumen_gemelo,
+        "nominal": cfg.descripcion_nominal(),
         "cad": {
             "archivos": rep.archivos,
             "volumenes_um3": rep.volumenes_um3,
@@ -932,11 +1041,11 @@ def guardar(
     informe = _escribir_informe(informe, carpeta)
     from motor.salida.visualizacion import crear_mapas
 
-    crear_mapas(informe, os.path.join(carpeta, "mapas.npz"), os.path.join(carpeta, "mapas.png"))
+    crear_mapas(informe, carpeta / "mapas.npz", carpeta / "mapas.png")
     return informe
 
 
-def configuracion_demo() -> Tuple[ConfigPipeline, "object"]:
+def configuracion_demo() -> tuple[ConfigPipeline, object]:
     from motor.analisis import demo
 
     cfg = ConfigPipeline(
@@ -1013,7 +1122,7 @@ def correr_demo(
 
 
 def _cargar_npz(ruta: str, claves: Sequence[str], remuestrear=False):
-    if not os.path.exists(ruta):
+    if not Path(ruta).exists():
         raise ErrorDeEntrada(f"no existe el archivo: {ruta}")
     try:
         with np.load(ruta, allow_pickle=False) as archivo:
@@ -1042,17 +1151,11 @@ def ejecutar_desde_config(ruta_config: str, verbose: bool = True, *, progreso=No
 
 
 def _ejecutar_desde_config(ruta_config: str, verbose: bool = True, *, progreso=None, cancelar=None):
-    from motor.medicion.materiales import BK7, PVB_SUPUESTO, SODOCALCICO_SUPUESTO
+    from motor.medicion.materiales import CATALOGO as catalogo
 
-    catalogo = {
-        "BK7": BK7,
-        "PVB_SUPUESTO": PVB_SUPUESTO,
-        "SODOCALCICO_SUPUESTO": SODOCALCICO_SUPUESTO,
-    }
-    base = os.path.dirname(os.path.abspath(ruta_config))
-    ruta = lambda r: r if os.path.isabs(r) else os.path.join(base, r)
-    with open(ruta_config, encoding="utf-8") as fh:
-        c = json.load(fh)
+    base = Path(ruta_config).resolve().parent
+    ruta = lambda r: base / r  # una ruta absoluta en r reemplaza a base
+    c = json.loads(Path(ruta_config).read_text(encoding="utf-8"))
     for clave in (
         "mediciones",
         "calibracion",
@@ -1091,6 +1194,31 @@ def _ejecutar_desde_config(ruta_config: str, verbose: bool = True, *, progreso=N
             "registro fijo requiere R y t; usa identidad explicita solo si ya compartes marco CAD"
         )
     T = Transformacion(regc["R"], regc["t"]) if "R" in regc and "t" in regc else None
+    cov_T = regc.get("covarianza")
+    meta_cad, zonas_cad = None, None
+    if c.get("cad_importado"):
+        from motor.geometria.importar_cad import cargar_modelo, zonas_por_nombre
+
+        meta_cad = cargar_modelo(ruta(c["cad_importado"]))
+        zonas_cad = zonas_por_nombre(meta_cad)
+    marco = c.get("marco_cad", meta_cad["marco"] if meta_cad else None)
+    if marco is not None:
+        M = Transformacion(marco["R"], marco["t"])
+        T = M.componer(T) if T is not None else M
+        cov_T = M.transportar_covarianza(cov_T)
+    nominal_mapa = None
+    if ca.get("d_nom_mapa"):
+        zn = _cargar_npz(ruta(ca["d_nom_mapa"]), ("X", "Y", "d_nom"))
+        nominal_mapa = {
+            "X": zn["X"],
+            "Y": zn["Y"],
+            "d_nom": zn["d_nom"],
+            "fuente": Path(ca["d_nom_mapa"]).name,
+        }
+        if "d_nom" not in ca:
+            v = np.all(np.isfinite(zn["d_nom"]), axis=0)
+            ca = dict(ca, d_nom=[float(zn["d_nom"][j][v].mean()) for j in range(len(zn["d_nom"]))])
+    w_nom_cad = c["cuna"]["w_nom"] == "cad"
     cfg = ConfigPipeline(
         instrumento=ins,
         d_nom=ca["d_nom"],
@@ -1099,7 +1227,7 @@ def _ejecutar_desde_config(ruta_config: str, verbose: bool = True, *, progreso=N
         grupos=ca["grupos"],
         nombres_capas=ca.get("nombres", [f"capa{j + 1}" for j in range(len(ca["d_nom"]))]),
         idx_pvb=ca.get("idx_pvb", 1),
-        w_nom=c["cuna"]["w_nom"],
+        w_nom=0.0 if w_nom_cad else c["cuna"]["w_nom"],
         tol_w=c["cuna"]["tol"],
         rango_frontal=tuple(c["rango_frontal"]),
         materiales_apriori=mats,
@@ -1109,13 +1237,23 @@ def _ejecutar_desde_config(ruta_config: str, verbose: bool = True, *, progreso=N
         grilla=tuple(c.get("grilla", (31, 31))),
     )
     cfg.modo_registro = regc["modo"]
-    cfg.transformacion, cfg.cov_transformacion = T, regc.get("covarianza")
-    cfg.direccion_cuna = tuple(c.get("direccion_cuna", (1, 0)))
+    cfg.transformacion, cfg.cov_transformacion = T, cov_T
     cfg.gradiente_nominal = ca.get("gradiente_nominal")
     cfg.origen_nominal_xy = tuple(ca.get("origen_nominal_xy", (0, 0)))
+    cfg.nominal_mapa = nominal_mapa
+    direccion = c.get("direccion_cuna", (1, 0))
+    if direccion == "cad":
+        cfg.__post_init__()
+        direccion = cfg.direccion_cuna_desde_cad()
+    cfg.direccion_cuna = tuple(direccion)
+    cfg.w_nom_cad = w_nom_cad
     cfg.tol_delta, cfg.origen_datos = c.get("tol_delta"), c.get("origen_datos", "no_declarado")
-    cfg.mascara_adquisicion = cargar_especificacion(c.get("mascara_adquisicion"), base)
-    cfg.zonas_tolerancia = c.get("zonas_tolerancia", [])
+    from motor.geometria.soporte import resolver_zonas_cad, resolver_zonas_tolerancia
+
+    cfg.mascara_adquisicion = cargar_especificacion(
+        resolver_zonas_cad(c.get("mascara_adquisicion"), zonas_cad, "mascara_adquisicion"), base
+    )
+    cfg.zonas_tolerancia = resolver_zonas_tolerancia(c.get("zonas_tolerancia", []), zonas_cad)
     cfg.presupuesto_declarado = c.get("presupuesto_incertidumbre", {})
     cfg.pose_exacta_declarada = regc.get("pose_exacta_declarada", False)
     cfg.fuente_registro = regc.get("fuente", "no_documentada")
@@ -1138,21 +1276,18 @@ def _ejecutar_desde_config(ruta_config: str, verbose: bool = True, *, progreso=N
     val = None
     independiente = False
     if c["calibracion"].get("validacion"):
-        import hashlib
 
         def huella(archivo):
-            h = hashlib.sha256()
-            with open(archivo, "rb") as fh:
-                for bloque in iter(lambda: fh.read(1024 * 1024), b""):
-                    h.update(bloque)
-            return h.hexdigest()
+            with Path(archivo).open("rb") as fh:
+                return hashlib.file_digest(fh, "sha256").hexdigest()
 
         fref, fval = ruta(c["calibracion"]["archivo"]), ruta(c["calibracion"]["validacion"])
-        refid, valid = c["calibracion"].get("muestra_id"), c["calibracion"].get(
-            "validacion_muestra_id"
+        refid, valid = (
+            c["calibracion"].get("muestra_id"),
+            c["calibracion"].get("validacion_muestra_id"),
         )
         if (
-            os.path.realpath(fref) == os.path.realpath(fval)
+            fref.resolve() == fval.resolve()
             or huella(fref) == huella(fval)
             or (refid is not None and refid == valid)
         ):
@@ -1210,56 +1345,24 @@ def _ejecutar_desde_config(ruta_config: str, verbose: bool = True, *, progreso=N
         informe["validacion_cruzada"] = _resumen_validacion(val)
     informe["trazabilidad"] = {
         "semilla": c.get("semilla"),
-        "config": os.path.abspath(ruta_config),
+        "config": str(Path(ruta_config).resolve()),
         "registro_fuente": regc.get("fuente", "no_documentada"),
         "muestra_calibracion": c["calibracion"].get("muestra_id"),
         "muestra_validacion": c["calibracion"].get("validacion_muestra_id"),
         "remuestreo_espectral_habilitado": remuestrear,
         "limite_remuestreo": "interpolación correlaciona ruido; calibración y repetibilidad deben usar la misma rejilla",
     }
+    if meta_cad is not None:
+        informe["cad_importado"] = {
+            "fuente": meta_cad.get("fuente"),
+            "capas": meta_cad.get("capas"),
+            "marco": meta_cad.get("marco"),
+            "avisos": meta_cad.get("avisos"),
+            "zonas": sorted(zonas_cad) if zonas_cad else [],
+        }
     informe = _escribir_informe(informe, salida)
     if verbose:
         imprimir_resumen(informe)
     if progreso is not None:
         progreso(1.0, "Exportación finalizada")
     return res, informe
-
-
-def main(argv: Optional[Sequence[str]] = None) -> int:
-    ap = argparse.ArgumentParser(description="Motor del gemelo digital de vidrio laminado")
-    ap.add_argument("--demo", action="store_true", help="ejecuta el escenario sintetico completo")
-    ap.add_argument("--config", help="ruta a config.json para correr con datos reales")
-    ap.add_argument(
-        "--generar-ejemplo",
-        metavar="CARPETA",
-        help="escribe un conjunto de archivos de ejemplo (formato de datos reales) y su config.json",
-    )
-    ap.add_argument("--salida", default="salida_demo", help="carpeta de resultados")
-    ap.add_argument("--ruido", type=float, default=0.01)
-    ap.add_argument("--semilla", type=int, default=0)
-    ap.add_argument("--n-lado", type=int, default=13)
-    ap.add_argument("--variante", choices=("base", "conforme", "defecto"), default="base")
-    a = ap.parse_args(argv)
-    if a.demo:
-        correr_demo(a.salida, a.ruido, a.semilla, a.n_lado)
-        print(f"\nResultados en: {os.path.abspath(a.salida)}")
-        return 0
-    if a.generar_ejemplo:
-        from motor.analisis import demo
-
-        ruta = demo.guardar_escenario(a.generar_ejemplo, a.ruido, a.semilla, a.n_lado, a.variante)
-        print(f"Ejemplo escrito. Corre:  python main.py analizar {ruta}")
-        return 0
-    if a.config:
-        try:
-            ejecutar_desde_config(a.config)
-        except ErrorDeEntrada as e:
-            print(f"ERROR DE ENTRADA: {e}", file=sys.stderr)
-            return 2
-        return 0
-    ap.print_help()
-    return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())

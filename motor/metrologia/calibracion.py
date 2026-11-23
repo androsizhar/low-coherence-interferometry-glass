@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import List, Optional, Sequence
 
 import numpy as np
 from scipy import stats
@@ -34,11 +34,11 @@ class Calibracion:
     ng: np.ndarray
     u_rel: np.ndarray
     sigma_a: np.ndarray
-    grupos: List[str]
-    banderas: List[str] = field(default_factory=list)
+    grupos: list[str]
+    banderas: list[str] = field(default_factory=list)
     m_repeticiones: int = 0
-    cov_a: Optional[np.ndarray] = None
-    cov_ng: Optional[np.ndarray] = None
+    cov_a: np.ndarray | None = None
+    cov_ng: np.ndarray | None = None
     metadatos_referencia: dict = field(default_factory=dict)
 
     def __post_init__(self):
@@ -111,9 +111,9 @@ def calibrar(
     resultados_ref: Sequence[ResultadoPicos],
     d_ref: Sequence[float],
     sigma_d_ref: Sequence[float],
-    grupos: Optional[Sequence[str]] = None,
+    grupos: Sequence[str] | None = None,
     confianza: float = 0.9973,
-    cov_d_ref: Optional[np.ndarray] = None,
+    cov_d_ref: np.ndarray | None = None,
 ) -> Calibracion:
     d_ref = _vector(d_ref, "d_ref", positivo=True)
     sd = _vector(sigma_d_ref, "sigma_d_ref")
@@ -141,7 +141,7 @@ def calibrar(
     ng = a_med / d_ref
     Cng = Ca / m / np.outer(d_ref, d_ref) + Cd * np.outer(ng / d_ref, ng / d_ref)
     P = np.eye(n_capas)
-    banderas: List[str] = []
+    banderas: list[str] = []
     for g in sorted(set(grupos)):
         idx = np.flatnonzero(np.array(grupos) == g)
         if idx.size < 2:
@@ -182,8 +182,8 @@ class ValidacionCruzada:
     z: np.ndarray
     ok: bool
     d_estimado: np.ndarray
-    sigma_d: Optional[np.ndarray] = None
-    error: Optional[np.ndarray] = None
+    sigma_d: np.ndarray | None = None
+    error: np.ndarray | None = None
 
 
 def validar_con_muestra(

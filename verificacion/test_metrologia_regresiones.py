@@ -32,7 +32,12 @@ def _cal():
 @pytest.mark.parametrize("valor", [np.nan, np.inf])
 def test_pose_no_finita_nunca_es_aceptada(campo, valor):
     k = np.linspace(3.9, 4.1, 1024)
-    kwargs = dict(k=k, I=np.ones(1024), normal=np.array([0.0, 0.0, 1.0]), posicion=np.zeros(3))
+    kwargs = {
+        "k": k,
+        "I": np.ones(1024),
+        "normal": np.array([0.0, 0.0, 1.0]),
+        "posicion": np.zeros(3),
+    }
     kwargs[campo][0] = valor
     with pytest.raises(ErrorDeEntrada):
         Medicion(**kwargs).validar()
@@ -42,7 +47,7 @@ def test_pose_no_finita_nunca_es_aceptada(campo, valor):
     "nombre,valor", [("offset", np.nan), ("sigma_ruido", -1), ("alpha", np.inf)]
 )
 def test_instrumento_invalido(nombre, valor):
-    kwargs = dict(lam0=1.55, offset=100.0)
+    kwargs = {"lam0": 1.55, "offset": 100.0}
     kwargs[nombre] = valor
     with pytest.raises(ErrorDeEntrada):
         Instrumento(**kwargs).validar()
@@ -177,10 +182,10 @@ def test_confocal_propaga_si_solo_un_canal_tiene_ruido(sigma_a, sigma_c):
 
 
 @pytest.mark.parametrize(
-    "kwargs", [dict(a=np.nan), dict(sigma_c=-1.0), dict(alpha=-0.1), dict(delta_g=np.inf)]
+    "kwargs", [{"a": np.nan}, {"sigma_c": -1.0}, {"alpha": -0.1}, {"delta_g": np.inf}]
 )
 def test_confocal_rechaza_entradas_no_fisicas(kwargs):
-    args = dict(a=1500.0, c=1000 / 1.5, delta_g=0.0, alpha=0.0)
+    args = {"a": 1500.0, "c": 1000 / 1.5, "delta_g": 0.0, "alpha": 0.0}
     args.update(kwargs)
     with pytest.raises(ErrorDeEntrada):
         separar_confocal(**args)

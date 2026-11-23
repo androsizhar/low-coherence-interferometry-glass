@@ -105,7 +105,7 @@ def test_config_requiere_marco_de_comparacion_explicito(tmp_path):
     }
     ruta = tmp_path / "config.json"
     ruta.write_text(json.dumps(config))
-    with pytest.raises(ErrorDeEntrada, match="registro.modo"):
+    with pytest.raises(ErrorDeEntrada, match=r"registro\.modo"):
         ejecutar_desde_config(str(ruta), verbose=False)
 
 

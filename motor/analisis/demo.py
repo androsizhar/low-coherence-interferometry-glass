@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 
 import numpy as np
+from scipy.spatial.transform import Rotation
 
-from motor.geometria.cad import Malla, Transformacion, _rodrigues, malla_desde_grilla
+from motor.geometria.cad import Malla, Transformacion, malla_desde_grilla
 from motor.medicion.lectura import Instrumento, Medicion
 from motor.medicion.materiales import BK7, PVB_SUPUESTO, Cauchy, Desplazado
 from motor.medicion.modelo_directo import Capa
@@ -26,7 +26,8 @@ R1, R2 = 1500 * UM, 2500 * UM
 
 def transformacion_montaje():
     return Transformacion(
-        _rodrigues(np.array([0.4e-3, -0.3e-3, 0.5e-3])), np.array([40.0, -25.0, 120.0])
+        Rotation.from_rotvec(np.array([0.4e-3, -0.3e-3, 0.5e-3])).as_matrix(),
+        np.array([40.0, -25.0, 120.0]),
     )
 
 
@@ -102,11 +103,9 @@ def _capas(d):
 
 @dataclass
 class Escenario:
-    mediciones: List[Medicion]
-    T_verdadera: Transformacion
+    mediciones: list[Medicion]
     verdad_d: np.ndarray
     verdad_delta: np.ndarray
-    xy_cad: np.ndarray
     k: np.ndarray
 
 
@@ -135,7 +134,7 @@ def generar_escenario(
     delta0 = perfil_delta(x, y)
     T = transformacion_montaje()
     tips_cad = Q + n_out * STANDOFF
-    meds: List[Medicion] = []
+    meds: list[Medicion] = []
     D_cum = np.concatenate([np.zeros((len(x), 1)), np.cumsum(d_true, axis=1)], axis=1)
     verdad_delta = np.zeros((4, len(x)))
     for i in range(len(x)):
@@ -151,10 +150,8 @@ def generar_escenario(
         verdad_delta[kk] = delta0 - (D_cum[:, kk] - nominal_cum[:, kk])
     return Escenario(
         mediciones=meds,
-        T_verdadera=T,
         verdad_d=d_true,
         verdad_delta=verdad_delta,
-        xy_cad=np.column_stack([x, y]),
         k=k,
     )
 
@@ -172,14 +169,15 @@ def guardar_escenario(
     carpeta: str, ruido: float = 0.01, semilla: int = 0, n_lado: int = 13, variante: str = "base"
 ) -> str:
     import json
-    import os
+    from pathlib import Path
 
     from motor.geometria.cad import escribir_stl
 
-    os.makedirs(carpeta, exist_ok=True)
+    carpeta = Path(carpeta)
+    carpeta.mkdir(parents=True, exist_ok=True)
     esc = generar_escenario(n_lado=n_lado, ruido=ruido, semilla=semilla, variante=variante)
     np.savez(
-        os.path.join(carpeta, "mediciones.npz"),
+        carpeta / "mediciones.npz",
         k=esc.k,
         I=np.array([m.I for m in esc.mediciones]),
         posicion=np.array([m.posicion for m in esc.mediciones]),
@@ -188,15 +186,11 @@ def guardar_escenario(
     )
     d_ref, sd = np.array([2100.0, 760.0, 1600.0]), np.array([1.0, 1.0, 1.0])
     k, Is = muestra_referencia(d_ref, 30, ruido, semilla + 1000)
-    np.savez(
-        os.path.join(carpeta, "calibracion.npz"), k=k, I=np.array(Is), d_ref=d_ref, sigma_d_ref=sd
-    )
+    np.savez(carpeta / "calibracion.npz", k=k, I=np.array(Is), d_ref=d_ref, sigma_d_ref=sd)
     d2 = np.array([2050.0, 800.0, 1650.0])
     k2, Is2 = muestra_referencia(d2, 10, ruido, semilla + 2000)
-    np.savez(
-        os.path.join(carpeta, "validacion.npz"), k=k2, I=np.array(Is2), d_ref=d2, sigma_d_ref=sd
-    )
-    escribir_stl(os.path.join(carpeta, "cad.stl"), malla_cad())
+    np.savez(carpeta / "validacion.npz", k=k2, I=np.array(Is2), d_ref=d2, sigma_d_ref=sd)
+    escribir_stl(carpeta / "cad.stl", malla_cad())
     config = {
         "origen_datos": "simulado",
         "mediciones": "mediciones.npz",
@@ -234,7 +228,6 @@ def guardar_escenario(
         "hud": {"theta_i_deg": 62.0, "Rp": 600000.0, "Rv": 900000.0},
         "salida": "salida",
     }
-    ruta = os.path.join(carpeta, "config.json")
-    with open(ruta, "w", encoding="utf-8") as fh:
-        json.dump(config, fh, indent=2)
-    return ruta
+    ruta = carpeta / "config.json"
+    ruta.write_text(json.dumps(config, indent=2), encoding="utf-8")
+    return str(ruta)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -74,7 +74,7 @@ def interferograma(
     offset: float,
     rho: float = 0.5,
     ruido: float = 0.0,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
     theta0: float = 0.0,
     incluir_autotermino: bool = True,
 ) -> np.ndarray:

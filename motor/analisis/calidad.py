@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 from scipy.stats import norm
@@ -21,7 +21,7 @@ class Cuna:
 
 
 def cuna_pvb(
-    gp_d_pvb: ProcesoGaussiano2D, Xs: np.ndarray, direccion: Optional[Sequence[float]] = None
+    gp_d_pvb: ProcesoGaussiano2D, Xs: np.ndarray, direccion: Sequence[float] | None = None
 ) -> Cuna:
     _, _, g, cov = gp_d_pvb.predecir(Xs, gradiente=True)
     if direccion is None:
@@ -47,7 +47,7 @@ def cuna_pvb(
     )
 
 
-Tol = Union[float, Tuple[float, float]]
+Tol = float | tuple[float, float]
 
 
 def probabilidad_fuera_de_tolerancia(
@@ -55,7 +55,7 @@ def probabilidad_fuera_de_tolerancia(
     sigma: np.ndarray,
     nominal: np.ndarray,
     tol: Tol,
-    sigma_sistematica: Union[float, np.ndarray] = 0.0,
+    sigma_sistematica: float | np.ndarray = 0.0,
 ) -> np.ndarray:
     try:
         mu, sigma, nominal, sis = np.broadcast_arrays(

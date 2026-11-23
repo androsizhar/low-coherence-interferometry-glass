@@ -11,7 +11,7 @@ import sys
 import tempfile
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from motor import __version__ as VERSION
@@ -27,8 +27,7 @@ class OperacionCancelada(ErrorProyecto):
 
 def _leer_json(ruta):
     try:
-        with open(ruta, encoding="utf-8") as f:
-            return json.load(f)
+        return json.loads(Path(ruta).read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise ErrorProyecto(f"No se puede abrir {Path(ruta).name}: {exc}") from exc
 
@@ -442,16 +441,15 @@ def _trabajar(accion, s):
         tmp = None
         try:
             if s.get("salida") or s.get("salida_temporal"):
-                f = tempfile.NamedTemporaryFile(
+                with tempfile.NamedTemporaryFile(
                     mode="w",
                     suffix=".json",
                     prefix=".vitro-",
                     dir=cp.parent,
                     delete=False,
                     encoding="utf-8",
-                )
-                json.dump(c, f, ensure_ascii=False)
-                f.close()
+                ) as f:
+                    json.dump(c, f, ensure_ascii=False)
                 tmp = Path(f.name)
                 cp_ejec = tmp
             else:
@@ -542,7 +540,7 @@ def _trabajar(accion, s):
         }
         manifest = {
             "version": VERSION,
-            "fecha_utc": datetime.now(timezone.utc).isoformat(),
+            "fecha_utc": datetime.now(UTC).isoformat(),
             "python": sys.version,
             "archivos_sha256": hashes,
             "veredicto": inf["veredicto"],

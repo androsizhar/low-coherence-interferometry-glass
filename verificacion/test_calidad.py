@@ -55,7 +55,7 @@ def _gp_cuna(w_true_mrad, ang_deg, seed, n=15, sigma=0.3):
 def test_cuna_recuperada_y_sigma_calibrada():
     z, ratios = [], []
     for seed in range(12):
-        gp, s = _gp_cuna(0.35, 0.0, seed)
+        gp, _s = _gp_cuna(0.35, 0.0, seed)
         Xs = np.array([[25.0, 50.0], [50.0, 50.0], [75.0, 50.0]])
         c = cuna_pvb(gp, Xs)
         tx = 0.35 + 1.5 * (-np.sin(2 * np.pi * (Xs[:, 0] + Xs[:, 1]) / 90)) * (2 * np.pi / 90)
@@ -67,7 +67,7 @@ def test_cuna_recuperada_y_sigma_calibrada():
 
 
 def test_direccion_de_cuna_se_estima():
-    gp, s = _gp_cuna(0.40, 30.0, seed=1)
+    gp, _s = _gp_cuna(0.40, 30.0, seed=1)
     Xs = np.column_stack([np.linspace(20, 80, 7), np.linspace(20, 80, 7)])
     c = cuna_pvb(gp, Xs)
     ang = np.degrees(np.arctan2(c.direccion[1], c.direccion[0]))

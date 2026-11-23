@@ -39,7 +39,7 @@ def condicion_pose(informe: dict) -> str:
             "declarada (real)" if origen == "real_declarado" else "declarada (origen no verificado)"
         )
     )
-    return f'pose {descripcion} con covarianza X = {json.dumps(cov, ensure_ascii=False, separators=(",", ":"))} [rotación rad, traslación µm], marco CAD'
+    return f"pose {descripcion} con covarianza X = {json.dumps(cov, ensure_ascii=False, separators=(',', ':'))} [rotación rad, traslación µm], marco CAD"
 
 
 def motivos_no_concluyente(informe: dict) -> list[str]:

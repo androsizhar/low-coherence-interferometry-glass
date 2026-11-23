@@ -363,3 +363,50 @@ def test_la_rueda_del_raton_no_cambia_los_selectores(ventana):
     )
     W.QApplication.sendEvent(combo, evento)
     assert combo.currentText() == antes
+
+
+def test_importar_cad_pieza_de_prueba_y_analisis_desde_la_ventana(
+    ventana, app, tmp_path, monkeypatch
+):
+    import laminado_sintetico
+
+    capas, _ = laminado_sintetico.escribir(str(tmp_path))
+    proyecto = tmp_path / "proyecto"
+    ventana.restaurar(proyecto)
+    assert not ventana.pieza_cad_btn.isEnabled()
+    ventana.unidad_stl.setCurrentText("µm")
+    monkeypatch.setattr(W.QFileDialog, "getOpenFileNames", lambda *a, **k: (capas, ""))
+    ventana.importar_cad()
+    esperar(app, lambda: ventana.pieza_cad_btn.isEnabled(), segundos=180)
+    resumen = ventana.cad_resumen.toPlainText()
+    assert "vidrio_ext" in resumen and "intercapa" in resumen
+    assert (proyecto / "modelo_cad" / "cad_importado.json").is_file()
+
+    ventana.pieza_prueba_cad()
+    esperar(app, lambda: ventana._rutas["config"].text().endswith("config.json"), segundos=180)
+    assert ventana.validacion_texto.toPlainText() == "Archivos válidos."
+    assert not ventana.cuna_nom.isEnabled()
+    cfg = ventana._config_efectiva()
+    assert Path(cfg["cad_importado"]).is_file() and Path(cfg["capas"]["d_nom_mapa"]).is_file()
+
+    ventana.analizar()
+    esperar(app, lambda: ventana.resultado_actual is not None, segundos=300)
+    informe = ventana.resultado_actual["informe"]
+    assert informe["nominal"]["tipo"] == "mapa_por_nodo_desde_cad"
+    assert informe["puntos_con_defecto"] == {}
+
+    otra = VentanaPrincipal()
+    otra.restaurar(proyecto)
+    assert otra.pieza_cad_btn.isEnabled()
+    otra.close()
+
+
+def test_importar_cad_rechaza_un_solo_stl(ventana, monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        W.QFileDialog, "getOpenFileNames", lambda *a, **k: ([str(tmp_path / "capa.stl")], "")
+    )
+    mostrados = []
+    monkeypatch.setattr(ventana, "_error", lambda mensaje, detalle="": mostrados.append(mensaje))
+    ventana.importar_cad()
+    assert mostrados and "al menos 2" in mostrados[0]
+    assert ventana.trabajador is None

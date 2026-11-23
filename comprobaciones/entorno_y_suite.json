@@ -1,8 +1,8 @@
 {
   "version_programa": "0.5.0",
   "sistema": "Linux x86-64 (QT_QPA_PLATFORM=offscreen)",
-  "pruebas": 336,
-  "resultado": "336 passed, 0 skipped por versión (incluye la lectura STEP con gmsh)",
+  "pruebas": 338,
+  "resultado": "338 passed, 0 skipped por versión (incluye la lectura STEP con gmsh)",
   "estilo": "ruff check y ruff format --check sin observaciones (pyproject.toml)",
   "entornos": {
     "3.11": {
@@ -17,7 +17,7 @@
       "pypdf": "7.1.1",
       "pytest": "9.2.0",
       "gmsh": "4.15.2",
-      "segundos": 149.41
+      "segundos": 245.74
     },
     "3.12": {
       "python": "3.12.13",
@@ -31,7 +31,7 @@
       "pypdf": "7.1.1",
       "pytest": "9.2.0",
       "gmsh": "4.15.2",
-      "segundos": 151.93
+      "segundos": 223.07
     },
     "3.13": {
       "python": "3.13.18",
@@ -45,7 +45,7 @@
       "pypdf": "6.17.0",
       "pytest": "9.1.1",
       "gmsh": "4.15.2",
-      "segundos": 133.74
+      "segundos": 184.0
     }
   }
 }

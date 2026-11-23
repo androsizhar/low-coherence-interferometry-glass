@@ -6,6 +6,7 @@ from pathlib import Path
 from motor import RAIZ, __version__
 from motor.interfaz.componentes import (
     Entero,
+    Imagen,
     Selector,
     boton,
     numero,
@@ -24,6 +25,7 @@ ARCHIVOS = (
     ("mascara", "Máscara de adquisición", "NPZ (*.npz)"),
 )
 RECETA_EJEMPLO = RAIZ / "ejemplos" / "recetas.json"
+FILTRO_CAD = "CAD (*.stp *.step *.STP *.STEP *.igs *.iges *.IGS *.IGES *.brep *.stl *.STL)"
 
 
 class PestanaProyecto:
@@ -56,6 +58,27 @@ class PestanaProyecto:
         cuadricula.addWidget(self.unidad_stl, len(ARCHIVOS), 1)
         interior.addLayout(cuadricula)
         disposicion.addWidget(archivos)
+
+        cad, interior = seccion("CAD de la pieza (STEP, o un STL cerrado por capa)")
+        fila = W.QHBoxLayout()
+        self.importar_cad_btn = boton("Importar CAD…", self.importar_cad, fila)
+        self.pieza_cad_btn = boton("Pieza de prueba sobre el CAD", self.pieza_prueba_cad, fila)
+        self.pieza_cad_btn.setEnabled(False)
+        self.pieza_cad_btn.setToolTip(
+            "Simula mediciones sobre la geometría importada para probar el análisis."
+        )
+        fila.addStretch()
+        interior.addLayout(fila)
+        self.cad_resumen = zona_texto(
+            altura=130,
+            pista="El archivo CAD se queda en su computadora; aquí se ven las capas detectadas.",
+        )
+        interior.addWidget(self.cad_resumen)
+        self.cad_vista = Imagen()
+        self.cad_vista.setMinimumSize(500, 220)
+        self.cad_vista.vaciar("Sin CAD importado")
+        interior.addWidget(self.cad_vista)
+        disposicion.addWidget(cad)
 
         huecos, interior = seccion("Huecos del soporte (mm, marco CAD)")
         fila = W.QHBoxLayout()
@@ -114,6 +137,7 @@ class PestanaProyecto:
         self.proyecto.mkdir(parents=True, exist_ok=True)
         self.carpeta_label.setText(f"Carpeta: {self.proyecto}")
         self.destino.setText(str(self.proyecto / "exportacion"))
+        self._mostrar_modelo_cad_guardado()
         try:
             if (self.proyecto / "proyecto.vitro.json").exists():
                 self._restaurar_estado(self._servicio().abrir_proyecto(self.proyecto))
@@ -183,11 +207,17 @@ class PestanaProyecto:
         self.unidad_stl.setCurrentText("mm" if cfg.get("escala_cad", 1) == 1000 else "µm")
         capas = cfg.get("capas", {})
         tolerancias = capas.get("tol_d", [])
-        for fila in range(min(3, len(capas.get("d_nom", [])))):
-            self.tolerancias.setItem(fila, 1, W.QTableWidgetItem(str(capas["d_nom"][fila])))
+        nominal_cad = bool(capas.get("d_nom_mapa"))
+        for fila in range(min(3, len(capas.get("d_nom") or tolerancias))):
+            nominal = "mapa del CAD" if nominal_cad else str(capas["d_nom"][fila])
+            self.tolerancias.setItem(fila, 1, W.QTableWidgetItem(nominal))
             valor = str(tolerancias[fila]) if fila < len(tolerancias) else ""
             self.tolerancias.setItem(fila, 2, W.QTableWidgetItem(valor))
-        self.cuna_nom.setValue(float(cfg.get("cuna", {}).get("w_nom", 0)))
+        w_nom = cfg.get("cuna", {}).get("w_nom", 0)
+        cuna_cad = w_nom == "cad"
+        self.cuna_nom.setEnabled(not cuna_cad)
+        self.cuna_nom.setToolTip("Nominal tomado del mapa del CAD importado" if cuna_cad else "")
+        self.cuna_nom.setValue(0.0 if cuna_cad else float(w_nom))
         self.cuna_tol.setValue(float(cfg.get("cuna", {}).get("tol", 0.1)))
         if not self.receta.toPlainText() and RECETA_EJEMPLO.exists():
             self.receta.setPlainText(RECETA_EJEMPLO.read_text(encoding="utf-8"))
@@ -264,6 +294,85 @@ class PestanaProyecto:
             self.cargar_resultado(resultado["informe_path"])
         self.estado.setText("Ejemplo sintético creado")
 
+    def importar_cad(self):
+        rutas, _ = W.QFileDialog.getOpenFileNames(
+            self, "Seleccione el CAD de la pieza", str(self.proyecto or Path.home()), FILTRO_CAD
+        )
+        if not rutas:
+            return
+        stl = [r for r in rutas if r.lower().endswith(".stl")]
+        if stl and (len(stl) != len(rutas) or len(stl) < 2):
+            self._error(
+                "Con STL seleccione un archivo cerrado por capa (al menos 2, todos STL). "
+                "Con STEP, IGES o BREP seleccione un solo archivo."
+            )
+            return
+        if not stl and len(rutas) != 1:
+            self._error("Seleccione un solo archivo STEP, IGES o BREP.")
+            return
+        if self.proyecto is None:
+            self.abrir_carpeta()
+        if self.proyecto is None:
+            return
+        unidades = "mm" if self.unidad_stl.currentText() == "mm" else "um"
+        self.cad_resumen.setPlainText("Importando el CAD…")
+        self._tarea(
+            self._servicio().importar_cad,
+            self._cad_importado,
+            rutas,
+            str(self.proyecto / "modelo_cad"),
+            unidades=unidades,
+        )
+
+    def _cad_importado(self, resultado):
+        self._modelo_cad = resultado["modelo_path"]
+        lineas = ["Capas desde el lado de la sonda:"]
+        lineas += [
+            f"  {c['nombre']}: {c['espesor_min_um']:.1f}–{c['espesor_max_um']:.1f} µm,"
+            f" cuña p95 {c['cuna_p95_mrad']:.3f} mrad"
+            for c in resultado["capas"]
+        ]
+        lineas.append(f"Radio de curvatura mínimo: {resultado['radio_curvatura_min_mm']:.0f} mm")
+        lineas.append(f"Zonas del CAD: {', '.join(resultado['zonas']) or 'ninguna'}")
+        if resultado.get("zonas_pequenas"):
+            lineas.append(
+                f"Además {resultado['zonas_pequenas']} zonas menores de 1 cm² (puntos de referencia)"
+            )
+        avisos = [a for a in resultado["avisos"] if not a.startswith("solido_laminar_pequeno")]
+        ignorados = len(resultado["avisos"]) - len(avisos)
+        if ignorados:
+            lineas.append(f"Accesorios ignorados: {ignorados}")
+        lineas += [f"Aviso: {a.replace('_', ' ')}" for a in avisos]
+        lineas.append(f"Modelo: {resultado['carpeta']}")
+        self.cad_resumen.setPlainText("\n".join(lineas))
+        self.cad_vista.cargar(resultado["vista_path"])
+        self.pieza_cad_btn.setEnabled(True)
+        self.estado.setText("CAD importado")
+
+    def _mostrar_modelo_cad_guardado(self):
+        modelo = self.proyecto / "modelo_cad" / "cad_importado.json"
+        self._modelo_cad = str(modelo) if modelo.is_file() else None
+        self.pieza_cad_btn.setEnabled(self._modelo_cad is not None)
+        if self._modelo_cad:
+            self.cad_resumen.setPlainText(f"CAD importado en: {modelo.parent}")
+            self.cad_vista.cargar(modelo.parent / "vista_cad.png")
+        else:
+            self.cad_resumen.clear()
+            self.cad_vista.vaciar("Sin CAD importado")
+
+    def pieza_prueba_cad(self):
+        modelo = getattr(self, "_modelo_cad", None)
+        if not modelo or not Path(modelo).is_file():
+            self._error("Primero importe un CAD.")
+            return
+        self._tarea(
+            self._servicio().ejemplo_cad,
+            self._ejemplo_generado,
+            modelo,
+            str(Path(modelo).parent.parent / "pieza_cad"),
+            semilla=self.semilla.value(),
+        )
+
     def agregar_hueco(self):
         xmin, xmax, ymin, ymax = [c.value() * 1000 for c in self.limites_hueco]
         if xmin >= xmax or ymin >= ymax:
@@ -291,6 +400,11 @@ class PestanaProyecto:
             valor = self._rutas[clave].text().strip() or cfg.get(clave)
             if isinstance(valor, str) and valor:
                 cfg[clave] = absoluta(valor)
+        if isinstance(cfg.get("cad_importado"), str):
+            cfg["cad_importado"] = absoluta(cfg["cad_importado"])
+        capas = cfg.get("capas")
+        if isinstance(capas, dict) and isinstance(capas.get("d_nom_mapa"), str):
+            capas["d_nom_mapa"] = absoluta(capas["d_nom_mapa"])
         calibracion = cfg.get("calibracion", {})
         if isinstance(calibracion, dict):
             for entrada, clave in (("calibracion", "archivo"), ("validacion", "validacion")):

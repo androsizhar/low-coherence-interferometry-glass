@@ -35,7 +35,7 @@ python main.py importar-cad capa1.stl capa2.stl capa3.stl --unidades mm --salida
 python main.py ejemplo-cad modelo_cad/cad_importado.json datos/pieza_cad --variante defecto
 ```
 
-`importar-cad` identifica las capas del laminado por geometría (no por nombre ni por número de capas), arma un marco local, calcula el espesor nominal de cada capa en toda la pieza y guarda las zonas del CAD (HUD, serigrafía, etc.) para usarlas por nombre en máscaras y tolerancias. Detalle en `documentacion/FORMATOS_DE_ENTRADA.md`.
+En la ventana, **Proyecto → Importar CAD…** hace lo mismo con el selector de archivos y **Pieza de prueba sobre el CAD** deja lista una pieza simulada para analizar. `importar-cad` identifica las capas del laminado por geometría (no por nombre ni por número de capas), arma un marco local, calcula el espesor nominal de cada capa en toda la pieza y guarda las zonas del CAD (HUD, serigrafía, etc.) para usarlas por nombre en máscaras y tolerancias. Detalle en `documentacion/FORMATOS_DE_ENTRADA.md`.
 
 ## Estructura
 

@@ -60,13 +60,15 @@ class PestanaCalidad:
             ruta = self._preparar_config()
             cfg = json.loads(ruta.read_text(encoding="utf-8"))
             capas = cfg.setdefault("capas", {})
-            capas["d_nom"] = [float(self.tolerancias.item(j, 1).text()) for j in range(3)]
+            if not capas.get("d_nom_mapa"):
+                capas["d_nom"] = [float(self.tolerancias.item(j, 1).text()) for j in range(3)]
             capas["tol_d"] = [float(self.tolerancias.item(j, 2).text()) for j in range(3)]
-            if any(x <= 0 for x in capas["d_nom"] + capas["tol_d"]):
+            if any(x <= 0 for x in capas.get("d_nom", []) + capas["tol_d"]):
                 raise ValueError("Escriba espesores y tolerancias positivos en µm.")
-            cfg.setdefault("cuna", {}).update(
-                w_nom=self.cuna_nom.value(), tol=self.cuna_tol.value()
-            )
+            cuna = cfg.setdefault("cuna", {})
+            cuna["tol"] = self.cuna_tol.value()
+            if cuna.get("w_nom") != "cad":
+                cuna["w_nom"] = self.cuna_nom.value()
             ruta.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
             self._rutas["config"].setText(str(ruta))
             self.analizar()

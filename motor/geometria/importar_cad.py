@@ -943,8 +943,15 @@ def figura_modelo(modelo: ModeloImportado, ruta: str):
     fig, ejes = plt.subplots(1, N, figsize=(5.2 * N, 4.6), squeeze=False)
     X, Y = modelo.X / UM, modelo.Y / UM
     for j, ax in enumerate(ejes[0]):
-        im = ax.pcolormesh(X, Y, modelo.d_nom[j], shading="auto", cmap="viridis")
-        fig.colorbar(im, ax=ax, label="espesor nominal (µm)")
+        d = modelo.d_nom[j]
+        centro = float(np.nanmean(d))
+        mitad = max(float(np.nanmax(d) - np.nanmin(d)) / 2, 1.0)  # ±1 µm mínimo: no exagerar ruido
+        im = ax.pcolormesh(
+            X, Y, d, shading="auto", cmap="viridis", vmin=centro - mitad, vmax=centro + mitad
+        )
+        barra = fig.colorbar(im, ax=ax, label="espesor nominal (µm)")
+        barra.formatter.set_useOffset(False)
+        barra.update_ticks()
         for z in modelo.zonas:
             if z["area_mm2"] < 100:
                 continue

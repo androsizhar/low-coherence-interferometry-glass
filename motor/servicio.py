@@ -265,6 +265,38 @@ def generar_ejemplo(carpeta, progreso=None, cancelar=None, semilla=0):
     )
 
 
+def importar_cad(rutas, carpeta, unidades="mm", progreso=None, cancelar=None):
+    """Importa un STEP/IGES/BREP, o un STL cerrado por capa, a la carpeta del modelo."""
+    rutas = [rutas] if isinstance(rutas, (str, Path)) else list(rutas)
+    if not rutas:
+        raise ErrorProyecto("Seleccione un archivo CAD.")
+    return _motor(
+        "importar_cad",
+        {
+            "rutas": [str(Path(r).resolve()) for r in rutas],
+            "carpeta": str(Path(carpeta).resolve()),
+            "unidades": unidades,
+        },
+        progreso,
+        cancelar,
+    )
+
+
+def ejemplo_cad(modelo, carpeta, semilla=0, variante="defecto", progreso=None, cancelar=None):
+    """Pieza sintética sobre la geometría de un CAD importado, lista para analizar."""
+    return _motor(
+        "ejemplo_cad",
+        {
+            "modelo": str(Path(modelo).resolve()),
+            "carpeta": str(Path(carpeta).resolve()),
+            "semilla": int(semilla),
+            "variante": variante,
+        },
+        progreso,
+        cancelar,
+    )
+
+
 def analizar_proyecto(config_path, salida=None, progreso=None, cancelar=None):
     validar_proyecto(config_path)
     return _motor(
@@ -428,6 +460,41 @@ def _trabajar(accion, s):
         cfg["semilla"] = s.get("semilla", 0)
         Path(p).write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         guardar_proyecto(s["carpeta"], {"config_path": str(Path(p).resolve())})
+        return {"config_path": str(Path(p).resolve())}
+    if accion == "importar_cad":
+        from motor.geometria.importar_cad import importar
+
+        rutas = s["rutas"]
+        unico = len(rutas) == 1
+        _evento(0.05, "Leyendo el CAD; un STEP grande puede tardar un minuto")
+        modelo, ruta = importar(rutas[0] if unico else rutas, s["carpeta"], unidades=s["unidades"])
+        _evento(1, "CAD importado: revise las capas y los avisos")
+        capas = [
+            {
+                "nombre": nombre,
+                "espesor_min_um": c["espesor_min_um"],
+                "espesor_max_um": c["espesor_max_um"],
+                "cuna_p95_mrad": c["cuna_p95_mrad"],
+            }
+            for nombre, c in modelo.diagnostico["capas"].items()
+        ]
+        return {
+            "modelo_path": ruta,
+            "carpeta": s["carpeta"],
+            "vista_path": str(Path(s["carpeta"]) / "vista_cad.png"),
+            "capas": capas,
+            "zonas": sorted({z["nombre"] for z in modelo.zonas if z["area_mm2"] >= 100}),
+            "zonas_pequenas": len({z["nombre"] for z in modelo.zonas if z["area_mm2"] < 100}),
+            "avisos": modelo.avisos,
+            "radio_curvatura_min_mm": modelo.diagnostico["radio_curvatura_min_mm"],
+        }
+    if accion == "ejemplo_cad":
+        from motor.analisis.sintetico_cad import generar_desde_cad
+
+        _evento(0.05, "Generando una pieza sintética sobre el CAD: no son mediciones reales")
+        p = generar_desde_cad(
+            s["modelo"], s["carpeta"], semilla=s.get("semilla", 0), variante=s["variante"]
+        )
         return {"config_path": str(Path(p).resolve())}
     if accion == "analizar":
         from motor.analisis.pipeline import ejecutar_desde_config

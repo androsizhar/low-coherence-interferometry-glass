@@ -27,7 +27,7 @@
 
 ## Lo que se verificó y lo que no
 
-`comprobaciones/` contiene las salidas de la suite (308 pruebas en Python 3.11, 3.12 y 3.13 sobre Linux) y las versiones usadas. La interfaz PySide6 y la ventana 3D VTK se ejecutaron de verdad en ese entorno; `documentacion/capturas/` muestra el resultado.
+`comprobaciones/` contiene las salidas de la suite (Python 3.11, 3.12 y 3.13 sobre Linux) y las versiones usadas; `LEEME.md` indica la versión del programa y el número de pruebas. La interfaz PySide6 y la ventana 3D VTK se ejecutaron de verdad en ese entorno; `documentacion/capturas/` muestra el resultado.
 
 **No se probó** en Windows ni con Python 3.14 o superior. En macOS (Python 3.12.10) la instalación y el zoom de la ventana 3D se comprobaron a mano, no con la suite. Los datos son simulados: la validación experimental sigue pendiente.
 
@@ -40,7 +40,8 @@ Las bandas siguen siendo parciales y condicionadas al GP, al modelo óptico y a 
 ## Decisiones abiertas y límites conservados
 
 - **Confocal:** API experimental etiquetada y fuera de la GUI. El equipo debe acordar formato y metrología antes de conectarla.
-- **STEP:** no implementado. STL satisface el alcance actual; una futura exigencia requiere prueba de ida/vuelta y volumen.
+- **STEP:** lectura implementada con `importar-cad` (gmsh/OpenCASCADE opcional; ver `FORMATOS_DE_ENTRADA.md`). La exportación de resultados sigue en STL. El importador identifica capas por geometría y se probó con un laminado sintético (incluido en las pruebas) y con un CAD de parabrisas real con cuña HUD, que no se incluye en el repositorio. No modela insertos de cobertura parcial (películas o calefactores locales): los reporta como ignorados.
+- **Interfaz gráfica y CAD importado:** la importación es por línea de comandos. La ventana abre configuraciones que usan `cad_importado` y `d_nom_mapa`, pero la pestaña Calidad edita solo tres capas con nominal constante; para piezas con nominal por mapa conviene editar `config.json`.
 - **HUD:** trazador local2D de tres capas y dos reflexiones principales; predicción exploratoria hasta contrastar índices de fase visibles, geometría y fotografías reales. No se incluyeron intensidad/polarización ni curvatura global del sistema real.
 - **Máscara:** el soporte es a resolución de rejilla y la exclusión subrejilla es conservadora. El ajuste recibe las observaciones válidas suministradas; si se incluyen observaciones dentro de una zona excluida, el informe lo avisa. No inventar señales dentro de huecos reales.
 - **Datos físicos:** absorción/recubrimientos, temperatura, datums, eje espectral, offset, ruido, rango/resolución y muestra B siguen pendientes del equipo y de Vitro.

@@ -30,20 +30,26 @@ python main.py ejemplo datos/pieza_defecto --variante defecto
 python main.py analizar config.json
 python main.py receta ejemplos/recetas.json --salida salidas/recetas.json
 python main.py pdf informe.json mapas.npz informe.pdf
+python main.py importar-cad pieza.step --salida modelo_cad        # requiere gmsh (requirements-cad.txt)
+python main.py importar-cad capa1.stl capa2.stl capa3.stl --unidades mm --salida modelo_cad
+python main.py ejemplo-cad modelo_cad/cad_importado.json datos/pieza_cad --variante defecto
 ```
+
+`importar-cad` identifica las capas del laminado por geometría (no por nombre ni por número de capas), arma un marco local, calcula el espesor nominal de cada capa en toda la pieza y guarda las zonas del CAD (HUD, serigrafía, etc.) para usarlas por nombre en máscaras y tolerancias. Detalle en `documentacion/FORMATOS_DE_ENTRADA.md`.
 
 ## Estructura
 
 ```
-main.py            punto de entrada
+main.py            punto de entrada único (ventana y todas las órdenes)
+pyproject.toml     configuración de ruff y pytest
 motor/
   medicion/        lectura de señales, picos, modelo óptico y simulador
   metrologia/      calibración, espesor y diagnósticos
-  geometria/       CAD, superficies, soporte y exportación STL
-  analisis/        pipeline, calidad, gemelo, recetas y escenario de demostración
+  geometria/       CAD, importación STEP/STL por capa, superficies, soporte y exportación STL
+  analisis/        pipeline, calidad, gemelo, recetas, demostración y pieza sintética sobre un CAD
   salida/          figuras y reporte PDF
   interfaz/        ventana y pestañas (Qt)
-ejemplos/          receta de ejemplo, resultados de demostración y dos piezas simuladas (casos/)
+ejemplos/          receta de ejemplo y dos piezas simuladas ya analizadas (casos/)
 verificacion/      pruebas automáticas
 comprobaciones/    resultados de las pruebas por versión de Python
 documentacion/     instalación, formatos de entrada, alcance y protocolo de validación
@@ -53,11 +59,14 @@ documentacion/     instalación, formatos de entrada, alcance y protocolo de val
 
 `ejemplos/casos/conforme` y `ejemplos/casos/defecto` contienen el resultado ya analizado de dos piezas sintéticas: una dentro de tolerancia y otra con una burbuja en el vidrio exterior, una depresión en el PVB y una cuña fuera de especificación. Se abren en la ventana con **Abrir resultado** (`informe.json`) y cada carpeta incluye PDF, mapas, vista 3D, corte y STL. Los datos crudos (~38 MB por pieza) se regeneran con `python main.py ejemplo` y luego `python main.py analizar CARPETA/config.json`.
 
-## Pruebas
+## Pruebas y estilo
 
 ```bash
-python -m pytest -q verificacion
+python -m pytest              # suite completa (verificacion/)
+ruff check . && ruff format --check .   # requiere: python -m pip install ruff
 ```
+
+Las reglas de estilo están en `pyproject.toml` (Python 3.11+, sintaxis moderna, pathlib, API de NumPy 2). El resultado de `python main.py demo` y de `python main.py receta ejemplos/recetas.json` no se guarda en el repositorio: se regenera con esas órdenes.
 
 ## Estado
 

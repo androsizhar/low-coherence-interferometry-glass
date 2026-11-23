@@ -30,6 +30,16 @@ python -m pip download -r requirements.txt -d ruedas
 
 Copie `ruedas/` al equipo sin red y ejecute `python -m pip install --no-index --find-links ruedas -r requirements.txt`.
 
+## Lectura de CAD STEP (opcional)
+
+`python main.py importar-cad pieza.step` necesita el paquete `gmsh`, que incluye OpenCASCADE:
+
+```bash
+python -m pip install -r requirements-cad.txt
+```
+
+En Linux, gmsh necesita también la biblioteca del sistema libGLU (`sudo apt install libglu1-mesa`). Sin gmsh, el importador acepta un STL cerrado por capa (`importar-cad capa1.stl capa2.stl capa3.stl --unidades mm`).
+
 ## Sin ventana
 
-El núcleo y el PDF no necesitan Qt ni VTK. Se usan desde la línea de comandos con `python main.py demo`, `analizar`, `receta` y `pdf`.
+El núcleo y el PDF no necesitan Qt ni VTK. Se usan desde la línea de comandos con `python main.py demo`, `ejemplo`, `analizar`, `receta`, `pdf`, `importar-cad` y `ejemplo-cad` (`python main.py --help` las lista).

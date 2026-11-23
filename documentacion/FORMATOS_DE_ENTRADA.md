@@ -58,4 +58,43 @@ El diagnóstico de incidencia informa ángulos y, si hay índices de fase aporta
 - `software` y `trazabilidad.semilla` registran evidencia de ejecución; semilla ausente es null, nunca un número inventado.
 - Exportar produce `manifest.json` con versión y SHA-256. Guardar el proyecto no altera el CAD ni envía archivos fuera del equipo.
 
-Confocal: mantener `separar_confocal` como API experimental etiquetada. Para conectarla se necesita acordar formato, apertura, calibración, ruido y correlaciones. STEP: no implementado; mantener STL hasta una solicitud explícita del cliente con ensayos de ida/vuelta y volumen.
+Confocal: mantener `separar_confocal` como API experimental etiquetada. Para conectarla se necesita acordar formato, apertura, calibración, ruido y correlaciones. STEP: lectura con `importar-cad` (sección siguiente); la salida sigue en STL.
+
+## CAD importado (STEP o STL por capa)
+
+```bash
+python main.py importar-cad pieza.step --salida modelo_cad
+python main.py importar-cad capa_a.stl capa_b.stl capa_c.stl --unidades mm --zona HUD=hud.stl --salida modelo_cad
+```
+
+El importador no usa nombres, armadora, ejes de vehículo ni número de capas fijo:
+
+1. **Capas por geometría.** Un sólido es candidato a capa si es laminar (espesor equivalente 2V/A menor a 25 mm y a 5 % de su tamaño). Las capas son los laminares que se tocan cubriendo al menos 60 % de la cara de su vecina (`cobertura_min`) y forman una pila simple. Cintas, perfiles, soportes o películas parciales se reportan como ignorados.
+2. **Lado de la sonda.** `--lado-sonda convexo` (por defecto), `concavo` o el nombre de una capa extrema. La interfaz 0 es la cara de ese lado.
+3. **Marco local.** Por defecto se arma un marco donde la pieza es un campo de altura z(x,y), con z hacia la sonda (`P_local = R·P_cad + t`, guardado en `cad_importado.json`). `--marco original` lo evita si el CAD ya cumple esa condición.
+4. **Espesor nominal por nodo.** Cada interfaz se representa por mínimos cuadrados cuadráticos locales sobre los vértices del teselado (que están sobre la superficie exacta), y el espesor de cada capa se mide a lo largo de la normal de la cara frontal, igual que en el motor.
+5. **Zonas.** Las superficies auxiliares que están sobre el vidrio (a menos de 1 mm de una interfaz) se guardan con su nombre, la interfaz donde están y sus lazos en el marco local. Una región con huecos se evalúa con la regla par-impar.
+6. **Diagnóstico.** Radio de curvatura mínimo, validez del modelo local plano, inclinación máxima, cuña por capa, separación mínima de picos, error de cuerda del STL frontal y avisos.
+
+Salidas en la carpeta: `cad_frontal.stl` (µm, marco local), `nominal.npz` (`X`, `Y`, `z0`, `d_nom (capas,ny,nx)`, `mascara`), `cad_importado.json`, `config_fragmento.json` y `vista_cad.png`. Los nombres que vienen del STEP se asignan por orden de archivo y son solo etiquetas.
+
+Claves de `config.json` que usan el modelo:
+
+```json
+{
+  "cad": "modelo_cad/cad_frontal.stl",
+  "cad_importado": "modelo_cad/cad_importado.json",
+  "capas": {"d_nom_mapa": "modelo_cad/nominal.npz", "idx_pvb": 1, "...": "..."},
+  "cuna": {"w_nom": "cad", "tol": 0.1},
+  "direccion_cuna": "cad",
+  "mascara_adquisicion": {"excluir_zonas_cad": ["serigrafia_negra"]},
+  "zonas_tolerancia": [{"zona_cad": "campo_HUD", "tol_w": 0.05}]
+}
+```
+
+- Con `cad_importado`, `registro.R,t` sigue siendo la pose del sensor en el marco **original** del CAD; el motor compone el marco local y transporta la covarianza. `marco_cad: {R,t}` permite declararlo sin el JSON del importador.
+- `d_nom_mapa` reemplaza a `gradiente_nominal` (no se aceptan ambos). Si falta `d_nom`, se usa la media del mapa. Las ventanas de picos de cada adquisición se centran en el nominal local de su posición.
+- `cuna.w_nom = "cad"` compara la cuña medida contra el mapa de cuña nominal; `direccion_cuna = "cad"` toma la dirección media del gradiente nominal de la capa `idx_pvb`.
+- `zona_cad` y `excluir_zonas_cad`/`incluir_zonas_cad` usan los nombres de `cad_importado.json`; un nombre inexistente es un error. Las coordenadas de polígonos escritos a mano quedan en el marco local.
+
+`python main.py ejemplo-cad modelo_cad/cad_importado.json pieza --variante defecto` genera mediciones sintéticas sobre esa geometría (con `--zona` para restringirlas) y un `config.json` listo para `analizar`; `verdad.npz` guarda la verdad usada.
